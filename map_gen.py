@@ -58,7 +58,7 @@ heightmap_array = gaussian_filter(heightmap_array, sigma=5)
 
 # generate asset maps 
 #print("generating asset masks")
-#gradientmap, gradmask = assets.gradient(heightmap_array,5)
+gradientmap, gradmask = assets.gradient(heightmap_array,5,5)
 #low_mask = assets.low_mask(heightmap_array,80)
 #asset_mask = assets.asset_mask(heightmap_array,80,180)
 #asset_mask2 = (asset_mask * gradmask) / 255

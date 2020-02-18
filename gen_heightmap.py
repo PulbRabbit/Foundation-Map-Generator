@@ -89,6 +89,6 @@ heightmap = gaussian_filter(heightmap, sigma=5)
 
 
 # save heightmap
-pp.imsave("Map/heightmap.png", heightmap, vmin = 0, vmax = 255, cmap = 'gray')
+pp.imsave("heightmap.png", heightmap, vmin = 0, vmax = 255, cmap = 'gray')
 pp.imshow(heightmap)
 pp.show()

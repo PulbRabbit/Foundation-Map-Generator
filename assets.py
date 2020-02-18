@@ -20,30 +20,30 @@ def asset_mask(heightmap, min_height, max_height):
                 return_map[i][j] = 255
     return return_map
 
-def gradient(heightmap, steepness):
+def gradient(heightmap, steepness, sig):
 # returns the gradient map. combined with the asset mask , asset placing can be determined
     return_map = numpy.full((1024,1024),255)
     grad_map_x, grad_map_y = numpy.gradient(heightmap)
     grad_map = numpy.absolute(grad_map_x) + numpy.absolute(grad_map_y) 
     grad_map *= 10
-    grad_map = gaussian_filter(grad_map, sigma=3)
+    grad_map = gaussian_filter(grad_map, sigma=sig)
     for j in range(0,1024):
         for i in range(0, 1024):
             if grad_map[i][j] > steepness:
                 return_map[i][j] = 0
     return grad_map, return_map
 
-def berry_map(mask, density):
+def asset_map(mask, density):
     return_map = numpy.full((1024,1024),0)  
-    for j in range(100,924):
-        for i in range(100, 924):
-            if mask[i][j] > 0 and random.randrange(0,10000) < density:
+    for j in range(20,1003):
+        for i in range(20, 1003):
+            if mask[i][j] > 0 and random.randrange(0,50000) < density:
                 
                 return_map[i-1][j] = 255
                 return_map[i+1][j] = 255
                 return_map[i][j] = 255
                 return_map[i][j-1] = 255
-                return_map[i][j+2] = 255
+                return_map[i][j+1] = 255
 
     return return_map  
 

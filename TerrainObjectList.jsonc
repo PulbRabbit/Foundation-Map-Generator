@@ -1,5 +1,9 @@
 {
-    "version": "0.0.2",
+    "version": "0.0.3",
+    "map_attributes": {"max_height": 200, "min_height": 55, "river_level": 40},
+    "gradient_map":{"steepness":5, "sigma":5},
+    "densities": {"berries": 5, "stone": 5, "ore": 2, "fish": 20}, 
+    
     "rivers": [
         {
             "attributes":{"width": 5, "deviation": 15,"sigma": 10},
@@ -49,5 +53,6 @@
             ]
         }
 
-    ]    
+    ]
+   
 }
