@@ -1,4 +1,18 @@
-please note: its Work In Progress, so its just the backend and some testable script. 
+WHAT IS IT:
+Its a map generator for the game Foundation. 
+The final project will consist of two units: the first one generates a heightmap from a jsonc file,
+the second unit will generate all nesseccary maps from a heightmap (like berries, stone, fish, ore )
 
-if you know, what you do, you can use assets to generate different types of maps from a heightmap like berries, stone, fish, ore 
+WHATS THE STATUS:
+its Work In Progress
+
+WHAT ARE THE FILES:
+
+assets - is a library for generating all those asset maps from the heightmap
+terrain - is a library for all types of terrain for generation
+map_gen - is basically a test map to test and watch new functions
+TerrainObjectList - is the sample jsonc that can be adjusted for the heightmap generation process
+gen_heightmap - generates a heightmap from the TerrainObjectList.jsonc file 
+
+
 

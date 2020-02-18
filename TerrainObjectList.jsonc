@@ -1,0 +1,53 @@
+{
+    "version": "0.0.2",
+    "rivers": [
+        {
+            "attributes":{"width": 5, "deviation": 15,"sigma": 10},
+            "waypoints":[
+                {"x": 512, "y": 0 },
+                {"x": 256, "y": 256 },
+                {"x": 512, "y": 512 },
+                {"x": 768, "y": 768 },
+                {"x": 512, "y": 1024 }
+            ]
+        },
+        {
+            "attributes":{"width": 5, "deviation": 15,"sigma": 10},
+            "waypoints":[
+                {"x": 512, "y": 0 },
+                {"x": 512, "y": 256 },
+                {"x": 600, "y": 512 },
+                {"x": 800, "y": 768 },
+                {"x": 500, "y": 1024 }
+            ]
+        }
+    ],
+
+    "mountains": [
+        {
+            "attributes":{"height": 150, "deviation": 100, "density": 10, "sigma": 15},
+            "waypoints":[
+                {"x": 150,  "y": 150 },
+                {"x": 200,  "y": 400 },
+                {"x": 150,  "y": 700 }
+            ]
+        },
+        {
+            "attributes":{"height": 200, "deviation": 100, "density": 20, "sigma": 15},
+            "waypoints":[
+                {"x": 950, "y": 250 },
+                {"x": 600, "y": 400 },
+                {"x": 950, "y": 750 }
+            ]
+        },
+        {
+            "attributes":{"height": -100, "deviation": 100, "density": 20, "sigma": 30},
+            "waypoints":[
+                {"x":    0, "y": 1024 },
+                {"x":  512, "y":  950 },
+                {"x": 1024, "y": 1024 }
+            ]
+        }
+
+    ]    
+}
