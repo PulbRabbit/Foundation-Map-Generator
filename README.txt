@@ -14,5 +14,7 @@ map_gen - is basically a test map to test and watch new functions
 TerrainObjectList - is the sample jsonc that can be adjusted for the heightmap generation process
 gen_heightmap - generates a heightmap from the TerrainObjectList.jsonc file 
 
+HOW TO GENERATE A HEIGHTMAP
 
+create a folder "Map", adjust the TerrainObjectList.jsonc file to your wishes, run the gen_heightmap.py file
 
