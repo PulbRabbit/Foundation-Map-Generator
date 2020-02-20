@@ -1,58 +1,81 @@
 {
     "version": "0.0.3",
-    "map_attributes": {"max_height": 200, "min_height": 55, "river_level": 40},
-    "gradient_map":{"steepness":5, "sigma":5},
-    "densities": {"berries": 5, "stone": 5, "ore": 2, "fish": 20}, 
+    "map_attributes":{"max_height": 200, "min_height": 55, "river_level": 40, "sigma": 15},
+    "deciduous_density_map":{"steepness":2, "sigma":5},
+    "coniferous_density_map":{"steepness":1, "sigma":10},
+    "densities": {"berries": 5, "stone": 5, "ore": 2, "fish": 20},
+    "group_probabilities": {"berries": 5, "stone": 1, "ore": 0, "fish": 1}, 
     
     "rivers": [
         {
-            "attributes":{"width": 5, "deviation": 15,"sigma": 10},
+            "attributes":{"width": 1, "deviation": 10,"sigma": 5},
             "waypoints":[
-                {"x": 512, "y": 0 },
-                {"x": 256, "y": 256 },
-                {"x": 512, "y": 512 },
-                {"x": 768, "y": 768 },
-                {"x": 512, "y": 1024 }
+                {"x": 350, "y": 0 },
+                {"x": 450, "y": 256 },
+                {"x": 700, "y": 600 }
             ]
         },
         {
-            "attributes":{"width": 5, "deviation": 15,"sigma": 10},
+            "attributes":{"width": 1, "deviation": 10,"sigma": 5},
             "waypoints":[
-                {"x": 512, "y": 0 },
-                {"x": 512, "y": 256 },
-                {"x": 600, "y": 512 },
-                {"x": 800, "y": 768 },
-                {"x": 500, "y": 1024 }
+                {"x": 850, "y": 0 },
+                {"x": 750, "y": 128 },
+                {"x": 900, "y": 256 },
+                {"x": 750, "y": 384 },
+                {"x": 700, "y": 600 }
+            ]
+        },
+        {
+            "attributes":{"width": 2, "deviation": 20,"sigma": 5},
+            "waypoints":[
+                {"x": 700, "y": 600 },
+                {"x": 512, "y": 1030 }
             ]
         }
     ],
 
     "mountains": [
         {
-            "attributes":{"height": 150, "deviation": 100, "density": 10, "sigma": 15},
+            "attributes":{"height": 150, "deviation": 150, "density": 20, "sigma": 30},
             "waypoints":[
-                {"x": 150,  "y": 150 },
-                {"x": 200,  "y": 400 },
-                {"x": 150,  "y": 700 }
+                {"x": 0,  "y":   0 },
+                {"x": 100,  "y": 256 },
+                {"x": 156,  "y": 512 },
+                {"x": 100,  "y": 700 },
+                {"x": 50,  "y": 1024 },
+                {"x": 156,  "y": 1050 }
             ]
         },
         {
-            "attributes":{"height": 200, "deviation": 100, "density": 20, "sigma": 15},
+            "attributes":{"height": 100, "deviation": 150, "density": 20, "sigma": 15},
             "waypoints":[
-                {"x": 950, "y": 250 },
-                {"x": 600, "y": 400 },
-                {"x": 950, "y": 750 }
+                {"x": 1024, "y": 0 },
+                {"x": 950, "y": 512 },
+                {"x": 1024, "y": 1024 }
             ]
         },
         {
-            "attributes":{"height": -100, "deviation": 100, "density": 20, "sigma": 30},
+            "attributes":{"height": -100, "deviation": 200, "density": 20, "sigma": 30},
             "waypoints":[
                 {"x":    0, "y": 1024 },
                 {"x":  512, "y":  950 },
                 {"x": 1024, "y": 1024 }
             ]
+        },
+        {
+            "attributes":{"height": -150, "deviation": 150, "density": 20, "sigma": 20},
+            "waypoints":[
+                {"x":    0, "y":  512 },
+                {"x":  350, "y":  512 }
+            ]
+        },
+        {
+            "attributes":{"height": -100, "deviation": 150, "density": 20, "sigma": 20},
+            "waypoints":[
+                {"x":  700, "y":  250 },
+                {"x":  950, "y":  300 }
+            ]
         }
-
     ]
    
 }

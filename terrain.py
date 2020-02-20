@@ -1,19 +1,14 @@
 import numpy    # für die Array Mathematik
 import math
-from PIL import Image      # für die Bildbearbeitung
-
 import random
-import time 
 
 from scipy.ndimage.filters import gaussian_filter
-import matplotlib.pyplot as pp
-import matplotlib.image as imp
 
 class River:
 
-    def __init__(self,x_start, y_start, x_end, y_end, deviation):
+    def __init__(self, x_start, y_start, x_end, y_end, deviation):
         self.coords = []
-        self.coords.append((x_start,y_start))
+        self.coords.append((x_start, y_start))
         self.x_end = x_end
         self.y_end = y_end
         self.dev = deviation
