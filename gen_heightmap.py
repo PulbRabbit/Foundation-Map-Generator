@@ -1,8 +1,8 @@
 # Author: Kay "Isajah" Halbauer
-# Date: 18.02.2020
-# Version : 0.0.1
+# Date: 03/02/2020
+# Version : 0.0.2
 # Description:
-# This app reads a Json for all Terrain information and generates a heightmap from it
+# This app reads a Jsonc for all Terrain information and generates a heightmap from it
 
 import numpy    # für die Array Mathematik
 
@@ -12,6 +12,7 @@ import terrain
 import json
 
 import matplotlib.pyplot as pp
+import cv2
 import os
 
 #directories and file names 
@@ -20,7 +21,7 @@ hmap_name = "heightmap.png"
 map_folder = "Map"
 partials_folder = "PartialMaps"
 
-os.chdir("..")
+
 if not os.path.exists(map_folder):
     try:
         os.makedirs(map_folder)
@@ -38,22 +39,31 @@ if not os.path.exists(partials_folder):
         exit()
     else: 
         print("created PartialMaps folder")
+if not os.path.exists(json_name):
+    print("I was looking for TerrainObjectlist.jsonc, but could not find it! ---EXITING")
+    exit()
 
-#initializing empy lists for mountains and rivers
+#initializing empy lists for mountains and rivers and other vars
 mountains = []
 rivers = []
+mountain_maps = []
+river_maps = []
+
 river_level = 40
 water_level = 50
 high_level = 200
-sigma = 20
+pre_sigma = 20
+post_sigma = 20
 
 #parse json and add mountains and rivers to their lists
 with open(json_name) as json_file:
     data = json.load(json_file)
-    high_level = data['map_attributes']['max_height']
-    water_level = data['map_attributes']['min_height']
-    river_level = data['map_attributes']['river_level']
-    sigma = data['map_attributes']['sigma']
+    high_level = data['baseline_map']['max_height']
+    min_level = data['baseline_map']['min_height']
+    river_level = data['baseline_map']['river_level']
+    pre_sigma = data['baseline_map']['sigma']
+    post_sigma = data['postprocess']['sigma']
+
 
     # parse for Mountains
     for mountain in data['mountains']:
@@ -83,10 +93,14 @@ with open(json_name) as json_file:
             rivers[len(rivers)-1].add_coords(waypoint['x'],waypoint['y'])
 
 
-# now generate maps from objects
-mountain_maps = []
-river_maps = []
+# Generate a base_line map, all obects will be added
+baseline_map = numpy.random.randint(min_level, high = high_level, size=(1024,1024))
+baseline_map = gaussian_filter(baseline_map, sigma=pre_sigma)
+heightmap = baseline_map
+print("Baseline Map generated")
+print()
 
+# now generate maps from objects
 
 for mountain in mountains:
     mountain.print()
@@ -97,9 +111,6 @@ for river in rivers:
     river.print()
     print()
     river_maps.append(river.run())
-
-# Generate a base_line map, all obects will be added
-heightmap = numpy.random.randint(water_level, high = high_level, size=(1024,1024))
 
 
 # add all mountains
@@ -114,14 +125,20 @@ for i in range(0,1024):
                 heightmap[i][j] = river_level
 
 # add a final gaussfilter
-print("smoothening the map")
-heightmap = gaussian_filter(heightmap, sigma=sigma)
-
+print("postprocess smoothening the map")
+heightmap = numpy.interp(heightmap, (heightmap.min(), heightmap.max()), (0, 255)) # normalizing heightmap to 0...255
+heightmap = gaussian_filter(heightmap, sigma=post_sigma)
 
 # save heightmap
-pp.imsave(os.path.join(map_folder,hmap_name), heightmap, vmin = 0, vmax = 255, cmap = 'gray')
+print("saving heightmap")
+heightmap.astype(numpy.uint16) # converting data to 16bit unsigned integer
+cv2.imwrite(os.path.join(map_folder,hmap_name),heightmap) # save image to grayscale png, using cv2 instead of pyplot
+# --- pp.imsave(os.path.join(map_folder,hmap_name), heightmap, vmin = 0, vmax = 255, cmap = 'gray') # pyplot only saves as RGBA png
+
 
 # save Partial Maps for Analyzation
+print("saving partial maps for Analyzation")
+pp.imsave(os.path.join(partials_folder,"baseline.png"), baseline_map, vmin = 0, vmax = 255 )
 iteration = 0
 for mountain in mountain_maps:
     pp.imsave(os.path.join(partials_folder,"mountain_map" + str(iteration)+".png"), mountain, vmin = -100, vmax = 100)
@@ -130,4 +147,4 @@ iteration = 0
 for river in river_maps:
     pp.imsave(os.path.join(partials_folder,"river_map" + str(iteration)+".png"),river, vmin = 0, vmax = 40)
     iteration += 1
-pp.imsave(os.path.join(partials_folder,"combined"+".png"), heightmap, vmin = 0, vmax = 255 )
+pp.imsave(os.path.join(partials_folder,"combined.png"), heightmap, vmin = 0, vmax = 255 )

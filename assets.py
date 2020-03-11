@@ -45,7 +45,12 @@ def asset_cutout_mask(berries, stone, iron, sig):
     for j in range(0,1024):
         for i in range(0, 1024):
             if combined_map[i][j] > 0:
-                return_map[i][j] = 0
+                for r in range(-5,5):
+                    for c in range (-5,5):
+                        if 0 < i+r < 1023 and 0 < j+c < 1023 :
+                            return_map[i+r][j+c] = 0
+
+
     return_map = gaussian_filter(return_map, sigma=sig)
     return return_map
 
@@ -53,7 +58,7 @@ def asset_map(mask, density, group_probability):
     return_map = numpy.full((1024,1024),0)  
     for j in range(25,1000):
         for i in range(25, 1000):
-            if mask[i][j] > 0 and random.randrange(0,50000) < density:
+            if mask[i][j] > 0 and random.randrange(0,100000) < density:
                 for dot in brush :
                     return_map[i+dot[0]][j+dot[1]] = 255
                 

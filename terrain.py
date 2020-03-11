@@ -1,14 +1,19 @@
 import numpy    # für die Array Mathematik
 import math
+from PIL import Image      # für die Bildbearbeitung
+
 import random
+import time 
 
 from scipy.ndimage.filters import gaussian_filter
+import matplotlib.pyplot as pp
+import matplotlib.image as imp
 
 class River:
 
-    def __init__(self, x_start, y_start, x_end, y_end, deviation):
+    def __init__(self,x_start, y_start, x_end, y_end, deviation):
         self.coords = []
-        self.coords.append((x_start, y_start))
+        self.coords.append((x_start,y_start))
         self.x_end = x_end
         self.y_end = y_end
         self.dev = deviation
@@ -63,7 +68,6 @@ class River:
                     self.get_dir()
                 else:
                     self.deviate_dir()
-                #print("round: ",run_round,new_x, new_y)
             else:
                 loop_break = True
 
@@ -84,14 +88,17 @@ class River:
 
 
 class Mountain:
-    def __init__(self, height, deviation, density,sigma):
+    def __init__(self, height, spread, deviation, density,sigma):
         self.coords = []
         self.height = height
+        self.spread = spread
         self.width = 3
         self.dev = deviation
         self.dense = density
         self.height_map = numpy.full((1024,1024),0)
         self.sigma = sigma
+        self.x_dir = 0
+        self.y_dir = 0
 
     def add_coords(self,x,y):
         self.coords.append((x,y))
@@ -104,41 +111,45 @@ class Mountain:
         y = self.coords[0][1]
 
         #go from coord to coord
-        i = 1
-        while i < len(self.coords):
+        i = 0
+        loops = 0
+        while i+1 < len(self.coords) and loops < 100000:
             # calculate the direction to the next waypoint
-            x_vec = self.coords[i][0] - x
-            y_vec = self.coords[i][1] - y
-
-            length = math.sqrt(x_vec * x_vec + y_vec * y_vec )
-
-            x_dir = x_vec / length
-            y_dir = y_vec / length
+            
+            # calculate direction
+            if self.dev == 0 or (loops % (self.dev)) == 0:
+                self.set_dir(x,y,i)      # calculating direction to next waypoint
+            else:
+                self.deviate_dir()
+                #self.set_dir(x,y,i)
 
             # step forward 
-            x += x_dir
-            y += y_dir
+            x += self.x_dir
+            y += self.y_dir
 
             # drop a mountain
             for drops in range(0,self.dense):
-                x_draw = int(x + random.gauss(0,self.dev))
-                y_draw = int(y + random.gauss(0,self.dev))
+                x_draw = int(x + random.gauss(0,self.spread / 2))
+                y_draw = int(y + random.gauss(0,self.spread / 2))
+                dist = math.sqrt((x - x_draw)*(x-x_draw) + (y - y_draw)*(y - y_draw))
+                max_dist = math.sqrt(2*self.spread*self.spread)
+                dist = 0.2 + 0.8*(max_dist - dist) / (max_dist)
                 if 1 < x_draw < 1023 and 1 < y_draw < 1023:
                     
                     for r in range(-self.width,self.width):
                         for c in range(-self.width,self.width):
                             try:
-                                   self.height_map[int(y_draw+r),int(x_draw+c)] = random.randrange(0,self.height)
+                                   self.height_map[int(y_draw+r),int(x_draw+c)] = random.randrange(0,int(self.height * dist))
                             except:
                                 try: 
-                                    self.height_map[int(y_draw+r),int(x_draw+c)] = random.randrange(self.height,0)
+                                    self.height_map[int(y_draw+r),int(x_draw+c)] = random.randrange(int(self.height * dist),0)
                                 except:
                                     pass
 
-            hyst = 5
-            if self.coords[i][0] - hyst < x < self.coords[i][0] + hyst and self.coords[i][1] - hyst < y < self.coords[i][1] + hyst:
+            hyst = 20
+            if self.coords[i+1][0] - hyst < x < self.coords[i+1][0] + hyst and self.coords[i+1][1] - hyst < y < self.coords[i+1][1] + hyst:
                 i += 1
-
+            loops += 1
         self.height_map = gaussian_filter(self.height_map, sigma=self.sigma)
         return self.height_map
 
@@ -151,6 +162,35 @@ class Mountain:
         for wp in self.coords:
             print("waypoint: ",wp[0]," ",wp[1])
 
+    def deviate_dir(self):
+        dev = random.randrange(-self.dev,self.dev)
+        x_dir = self.x_dir + dev / 100
+        y_dir = self.y_dir - dev / 100
+
+        length = math.sqrt(x_dir*x_dir + y_dir*y_dir)
+        if length != 0 : 
+            self.x_dir = x_dir / length
+            self.y_dir = y_dir / length
+        else:
+            self.x_dir = 0
+            self.y_dir = 0
+
+    def set_dir(self,my_x,my_y, index):
+    
+        x_start = my_x
+        y_start = my_y
+
+        x_end = self.coords[index+1][0]
+        y_end = self.coords[index+1][1]
+
+        x_vec = x_end - x_start
+        y_vec = y_end - y_start
+
+        length = math.sqrt(x_vec * x_vec + y_vec * y_vec )
+
+        self.x_dir = x_vec / length
+        self.y_dir = y_vec / length
+            
 class ImprovedRiver:
     # improved River can use multiple coordinates and doesn't just rely on starting and endpoint
     def __init__(self, width, deviation,sigma):
@@ -223,16 +263,14 @@ class ImprovedRiver:
             # step forward 
             x += self.x_dir
             y += self.y_dir
-            #print("loops: ",loops, " wp: ",i," x/y: ",x,y)
-            #time.sleep(0.1)
+
             #waypoint reached
             hyst = self.dev
             if self.coords[i+1][0] - hyst < x < self.coords[i+1][0] + hyst and self.coords[i+1][1] - hyst < y < self.coords[i+1][1] + hyst:
                 i += 1
-                #print("waypoint ",i," reached")
             # count loops up
             loops += 1
-        #print(loops)
+
         self.height_map = gaussian_filter(self.height_map, sigma=self.sigma)
         return self.height_map
 
