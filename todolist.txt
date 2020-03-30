@@ -1,7 +1,4 @@
-Parameters to add: 
-  Beachline // as an independent parameter to determine, above height to place the grass and below sand
-  
-check if tree maps include cutouts for ressources
-change all png files to 16bt
-search for any file that starts with heightmap...
 
+change all png files to 16bt.
+
+disabling all buttons and functions, as long as no workspace is active
