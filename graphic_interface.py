@@ -1,8 +1,9 @@
 __author__ = "Isajah"
-__version__ = "1.1.2"
+__version__ = "1.2.1"
 
 # pyinstaller -c -F -i Resources/icon.ico graphic_interface.py
 
+# Imports
 from tkinter import font
 from tkinter import filedialog as filedialog
 from tkinter import messagebox
@@ -24,6 +25,7 @@ from shutil import copyfile
 
 print("initializing editor")
 
+# Constants
 HEIGHT = 700
 WIDTH = 800
 SCREEN_SIZE = 1024
@@ -31,14 +33,21 @@ MAX_16BIT = 65535
 PARTIALS = "PartialMaps"
 MAPS = "Maps"
 PARAM = "Parameters"
+# Files Handling
+map_folder = "Maps"
+heightmap_file_name = "heightmap.png"
+combined_file_name = "combined.png"
+
 
 print("getting local directories")
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(os.path.realpath(sys.executable))
 else:
     application_path = os.path.dirname(os.path.realpath(__file__))
+
+# Root and Toplevels
 root = tk.Tk()
-map_info_win = gui.MapInfo(100, 40)
+map_info_win = gui.MapInfo(100, 10, tk.IntVar(value=10), numpy.full((1024, 1024), 0))
 map_info_win.withdraw()
 about_win = gui.About(application_path)
 about_win.withdraw()
@@ -59,12 +68,23 @@ root.right_zoom = 1.0
 root.heightmap = numpy.full((1024, 1024), 0)
 root.initialize = 5
 root.view = 0
+root.easy = tk.IntVar(value=1)
 root.path_show = tk.IntVar(value=1)
+root.mountains = []
+root.rivers = []
+root.trees = []
+root.village_paths = []
+river_index = tk.IntVar(value=0)
+mountain_index = tk.IntVar(value=0)
+tree_index = tk.IntVar(value=0)
+vp_index = tk.IntVar(value=0)
+root.is_workspace = False
 
 default_font = font.nametofont("TkDefaultFont")
 default_font.configure(size=8)
 default_font = font.nametofont("TkTextFont")
 default_font.configure(size=8)
+
 
 try:
     root.state("zoomed")
@@ -74,20 +94,7 @@ except OSError:
     except OSError:
         print("issues with your OS")
 
-root.mountains = []
-root.rivers = []
-root.trees = []
-root.village_paths = []
 
-river_index = tk.IntVar(value=0)
-mountain_index = tk.IntVar(value=0)
-tree_index = tk.IntVar(value=0)
-vp_index = tk.IntVar(value=0)
-
-# Files Handling
-map_folder = "Maps"
-heightmap_file_name = "heightmap.png"
-combined_file_name = "combined.png"
 
 # Generate a baseline map, all objects will be added on the baseline
 gui.create_defaults()
@@ -96,7 +103,11 @@ gui.create_defaults()
 def add_river(wp_ignore=False):
     i = river_index.get()
     i += 1
-    root.rivers.append(gui.River(river_container, river_canvas, preview_canvas, i, root.ws_name, wp_ignore=wp_ignore))
+    root.rivers.append(gui.River(river_container, river_canvas, preview_canvas, i, root.ws_name,
+                                 easy_mode=root.easy.get() == 1))
+    if not wp_ignore:
+        root.rivers[-1].add_wp()
+        root.rivers[-1].add_wp()
     river_index.set(i)
     river_container.update()
     status.print("added river")
@@ -107,7 +118,11 @@ def add_river(wp_ignore=False):
 def add_mountain(wp_ignore=False):
     i = mountain_index.get()
     i += 1
-    root.mountains.append(gui.Mountain(mountain_container, mountain_canvas, preview_canvas, i, root.ws_name, wp_ignore=wp_ignore))
+    root.mountains.append(gui.Mountain(mountain_container, mountain_canvas, preview_canvas, i, root.ws_name,
+                                       easy_mode=root.easy.get() == 1))
+    if not wp_ignore:
+        root.mountains[-1].add_wp()
+        root.mountains[-1].add_wp()
     mountain_index.set(i)
     mountain_container.update()
     status.print("added mountain")
@@ -118,7 +133,8 @@ def add_mountain(wp_ignore=False):
 def add_tree():
     i = tree_index.get()
     i += 1
-    root.trees.append(gui.TreeMap(assets_container, assets_canvas, preview_canvas, i, root.ws_name))
+    root.trees.append(gui.TreeMap(assets_container, assets_canvas, preview_canvas, i, root.ws_name,
+                                  easy_mode=root.easy.get() == 1))
     root.trees[-1].add_type()
     tree_index.set(i)
     assets_container.update()
@@ -139,10 +155,10 @@ def add_tree():
 def add_village_path():
     i = vp_index.get()
     i += 1
-    root.village_paths.append(gui.VillagePath(village_path_container, village_path_canvas, i))
+    root.village_paths.append(gui.VillagePath(village_path_container, village_path_canvas, i, easy_mode=root.easy.get() == 1))
     vp_index.set(i)
     village_path_container.update()
-    cook_win.get_village_paths(root.village_paths)
+    cook_win.paths = root.village_paths
     status.print("added village path")
     set_heights(prio=True)
     root.view = 1
@@ -193,6 +209,7 @@ def cook_map():
     root.screen = ImageTk.PhotoImage(image)
     root.view = 0
     root.heightmap = heightmap
+    map_info_win.heightmap = heightmap
     draw_screen()
 
 
@@ -257,7 +274,7 @@ def draw_path(paths):
         elif y_entry > max_y:
             y_entry = max_y - 16
         else:
-            y_entry -= - 16
+            y_entry -= 16
 
         if x_exit < 10:
             x_exit = 5
@@ -313,6 +330,7 @@ def new_workspace():
         filetypes=(("folder", "*.dir"), ("all files", "*.*"))
     )
     if not root.ws_name == "":
+        root.is_workspace = True
         global_param.ws_name = root.ws_name
         assets_param.ws_name = root.ws_name
         cook_win.ws_dir = root.ws_name
@@ -346,6 +364,7 @@ def load_workspace():
     partials_exists = os.path.isdir(os.path.join(root.ws_name, PARTIALS))
     maps_exits = os.path.isdir(os.path.join(root.ws_name, MAPS))
     if param_exists and partials_exists and maps_exits:
+        root.is_workspace = True
         global_param.ws_name = root.ws_name
         assets_param.ws_name = root.ws_name
         cook_win.ws_dir = root.ws_name
@@ -379,6 +398,25 @@ def import_json():
 
 
 def load_json(file_name):
+    for river in root.rivers:
+        river.destroy()
+    for mountain in root.mountains:
+        mountain.destroy()
+    for tree in root.trees:
+        tree.destroy()
+    for vp in root.village_paths:
+        vp.destroy()
+
+    river_index.set(0)
+    mountain_index.set(0)
+    tree_index.set(0)
+    vp_index.set(0)
+
+    root.rivers = []
+    root.mountains = []
+    root.village_paths = []
+    root.trees = []
+
     with open(file_name) as json_file:
         data = json.load(json_file)
 
@@ -560,11 +598,11 @@ def set_heights(prio=False, init=False):
 
     # define left spaces
     if init:
-        left_space = root.winfo_screenheight() - globals_frame.winfo_height() - menu.winfo_height() - bottom_frame.winfo_height() - 180
-        right_space = root.winfo_screenheight() - menu.winfo_height() - bottom_frame.winfo_height() - 180
+        left_space = root.winfo_screenheight() - icon_frame.winfo_height() - globals_frame.winfo_height() - menu.winfo_height() - bottom_frame.winfo_height() - 180
+        right_space = root.winfo_screenheight() - icon_frame.winfo_height() - menu.winfo_height() - bottom_frame.winfo_height() - 180
     else:
-        left_space = root.winfo_screenheight() - globals_frame.winfo_height() - menu.winfo_height() - bottom_frame.winfo_height() - 100
-        right_space = root.winfo_screenheight() - menu.winfo_height() - bottom_frame.winfo_height() - 100
+        left_space = root.winfo_screenheight() - icon_frame.winfo_height() - globals_frame.winfo_height() - menu.winfo_height() - bottom_frame.winfo_height() - 100
+        right_space = root.winfo_screenheight() - icon_frame.winfo_height() - menu.winfo_height() - bottom_frame.winfo_height() - 100
     # set left column
     if prio:
         assets_height = left_space * 0.6
@@ -675,11 +713,69 @@ def import_heightmap():
     global_param.get_heightmap()
 
 
+def cook_win_open():
+    cook_win.paths = root.village_paths
+    cook_win.toggle_view()
+
+
+def easy_mode():
+    if root.easy.get() == 1:
+        global_param.mode_easy()
+        assets_param.mode_easy()
+
+        for tree in root.trees:
+            tree.mode_easy()
+            tree.easy_mode = True
+            for tree_type in tree.tree_types:
+                tree_type.mode_easy()
+
+        for path in root.village_paths:
+            path.mode_easy()
+
+        for mountain in root.mountains:
+            mountain.mode_easy()
+            mountain.easy_mode = True
+            for wp in mountain.wp_list:
+                wp.mode_easy()
+
+        for river in root.rivers:
+            river.mode_easy()
+            river.easy_mode = True
+            for wp in river.wp_list:
+                wp.mode_easy()
+
+        map_info_win.easy_mode = True
+    else:
+        assets_param.mode_normal()
+        global_param.mode_normal()
+        for tree in root.trees:
+            tree.mode_normal()
+            for tree_type in tree.tree_types:
+                tree_type.mode_normal()
+        for path in root.village_paths:
+            path.mode_normal()
+        for mountain in root.mountains:
+            mountain.mode_normal()
+            for wp in mountain.wp_list:
+                wp.mode_normal()
+        for river in root.rivers:
+            river.mode_normal()
+            for wp in river.wp_list:
+                wp.mode_normal()
+
+        map_info_win.easy_mode = False
+
+    assets_container.update()
+    mountain_container.update()
+    river_container.update()
+    set_heights(prio=root.view == 1)
+
+
 # -- toplevel menues
 
 print("building menues")
 cook_win = gui.CookWin(os.path.dirname(os.path.realpath(__file__)), [], cook_map, gui.AssetParams, map_info_win,
-                       gui.GlobalParams, root.rivers, root.mountains)
+                       gui.GlobalParams, root.rivers, root.mountains, root.village_paths)
 cook_win.withdraw()
 menu = tk.Menu(root)
 root.config(menu=menu)
@@ -728,6 +824,7 @@ view_menu.add_cascade(label="Priority", menu=prio_menu)
 prio_menu.add_command(label="Assets", command=lambda: set_heights(prio=True))
 prio_menu.add_command(label="Terrain", command=lambda: set_heights())
 view_menu.add_checkbutton(label="Show Village Pathing", onvalue=1, offvalue=0, variable=root.path_show)
+view_menu.add_checkbutton(label="Easy Mode", onvalue=1, offvalue=0, variable=root.easy, command=easy_mode)
 view_menu.add_cascade(label="Material Mask", menu=overlay_menu[0])
 overlay_menu[0].add_command(label="Material Mask", command=lambda: view_asset_maps("material_mask.png", overlay=0))
 overlay_menu[0].add_command(label="Overlay", command=lambda: view_asset_maps("material_mask.png", overlay=1))
@@ -798,36 +895,62 @@ result_canvas.bind('<Motion>', motion)
 # all objects for the left Row: 
 # first frame is hosting the add buttons to add mountains and rivers
 add_frame = tk.Frame(top_frame)
-# add_frame.grid(column = 0, row = 0, sticky = 'w')
+icon_frame = tk.Frame(top_frame)
+icon_frame.grid(column=0, row=0, sticky='w')
 
-add_frame_label = tk.Label(add_frame, text="Add Terrain Objects")
-add_frame_label.grid(column=0, row=0, sticky='w', padx=2)
-
-btn_load_json = tk.Button(add_frame, text="Load", command=import_json)
-btn_load_json.grid(column=1, row=0, sticky='nw', padx=2)
-
-btn_save_json = tk.Button(add_frame, text="Save", command=export_json)
-btn_save_json.grid(column=2, row=0, sticky='nw', padx=2)
-
-btn_add_river = tk.Button(add_frame, text="add river", command=add_river)
-btn_add_river.grid(column=3, row=0, sticky='nw', padx=2)
-
-btn_add_mountain = tk.Button(add_frame, text="add mountain", command=add_mountain)
-btn_add_mountain.grid(column=4, row=0, sticky='nw', padx=2)
-
-btn_poly_prev = tk.Button(add_frame, text="preview as poly", command=draw_screen)
-btn_poly_prev.grid(column=5, row=0, sticky='nw', padx=2)
-
-btn_cook_map = tk.Button(add_frame, text="cook map", command=cook_map)
-btn_cook_map.grid(column=6, row=0, sticky='nw', padx=2)
+new_ws_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "new20x20.png"))
+new_ws_btn = tk.Button(icon_frame, image=new_ws_image, command=new_workspace)
+new_ws_btn.grid(column=0, row=0, sticky='w', padx=2)
+new_ws_tt = gui.CreateToolTip(new_ws_btn, "create new workspace")
+load_ws_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "load20x20.png"))
+load_ws_btn = tk.Button(icon_frame, image=load_ws_image, command=load_workspace)
+load_ws_btn.grid(column=1, row=0, sticky='w', padx=2)
+load_ws_tt = gui.CreateToolTip(load_ws_btn, "load existing workspace workspace")
+save_ws_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "save20x20.png"))
+save_ws_btn = tk.Button(icon_frame, image=save_ws_image, command=save_workspace)
+save_ws_btn.grid(column=2, row=0, sticky='w', padx=2)
+save_ws_tt = gui.CreateToolTip(save_ws_btn, "save workspace")
+import_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "import20x20.png"))
+import_btn = tk.Button(icon_frame, image=import_image, command=import_json)
+import_btn.grid(column=3, row=0, sticky='w', padx=2)
+import_tt = gui.CreateToolTip(import_btn, "import a json parameter file")
+export_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "export20x20.png"))
+export_btn = tk.Button(icon_frame, image=export_image, command=export_json)
+export_btn.grid(column=4, row=0, sticky='w', padx=2)
+export_tt = gui.CreateToolTip(export_btn, "export a json parameter file")
+mountain_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "mountain20x20.png"))
+mountain_btn = tk.Button(icon_frame, image=mountain_image, command=add_mountain)
+mountain_btn.grid(column=5, row=0, sticky='w', padx=2)
+mountain_tt = gui.CreateToolTip(mountain_btn, "add a mountain range to the heightmap")
+river_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "river20x20.png"))
+river_btn = tk.Button(icon_frame, image=river_image, command=add_river)
+river_btn.grid(column=6, row=0, sticky='w', padx=2)
+river_tt = gui.CreateToolTip(river_btn, "add a river to the heightmap")
+tree_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "tree20x20.png"))
+tree_btn = tk.Button(icon_frame, image=tree_image, command=add_tree)
+tree_btn.grid(column=7, row=0, sticky='w', padx=2)
+tree_tt = gui.CreateToolTip(tree_btn, "add a tree map, that defines where and what kind of trees grow")
+path_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "path20x20.png"))
+path_btn = tk.Button(icon_frame, image=path_image, command=add_village_path)
+path_btn.grid(column=8, row=0, sticky='w', padx=2)
+path_tt = gui.CreateToolTip(path_btn, "add a Village path.\nA Village path defines an entry and an exit point for new villagers, traders and envoys")
+build_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "build20x20.png"))   # command via configure
+build_btn = tk.Button(icon_frame, image=build_image, command=cook_map)
+build_btn.grid(column=9, row=0, sticky='w', padx=2)
+build_tt = gui.CreateToolTip(build_btn, "build the heightmap from the baseline map and all river and mountain maps")
+cook_image = ImageTk.PhotoImage(file=os.path.join(root.base_dir, "Resources", "cook20x20.png"))
+cook_btn = tk.Button(icon_frame, image=cook_image, command=cook_win_open)
+cook_btn.grid(column=10, row=0, sticky='w', padx=2)
+cook_tt = gui.CreateToolTip(cook_btn, "finalize map by creating a folder with all necessary maps, the mod.json and mod.lua ")
 
 add_frame_height = add_frame.winfo_height()
 
 # second frame will host baseline
 globals_frame = tk.Frame(left_frame)
 globals_frame.grid(column=0, row=1, sticky='we')
-global_param = gui.GlobalParams(globals_frame, preview_canvas, 100, 500, 100, 5, 5, root.ws_name)
+global_param = gui.GlobalParams(globals_frame, preview_canvas, 100, 500, 100, 10, 5, root.ws_name)
 cook_win.globals = global_param
+
 # assets
 assets_frame = tk.Frame(left_frame)
 assets_frame.grid(column=0, row=2, sticky='we')
@@ -835,6 +958,7 @@ assets_container = gui.Scrollable(assets_frame, width=16)
 assets_canvas = tk.Frame(assets_container)
 assets_canvas.pack(side='left', expand=True, fill='both')
 assets_param = gui.AssetParams(assets_canvas, preview_canvas, root.ws_name)
+map_info_win.mmap_height = assets_param.str_grass_level
 cook_win.assets_handle = assets_param
 
 # Village Pathes
