@@ -284,3 +284,41 @@ class ImprovedRiver:
         print("sigma:     ", self.sigma)    
         for wp in self.wps:
             print("waypoint: ", wp[0], " ", wp[1])
+
+
+def perlin_noise(shape, frequency):
+    def f(t_pn):
+        return 6 * t_pn ** 5 - 15 * t_pn ** 4 + 10 * t_pn ** 3
+
+    res = (frequency, frequency)
+    delta = (res[0] / shape[0], res[1] / shape[1])
+    d = (shape[0] // res[0], shape[1] // res[1])
+    grid = numpy.mgrid[0:res[0]:delta[0], 0:res[1]:delta[1]].transpose(1, 2, 0) % 1
+    # Gradients
+    angles = 2 * numpy.pi * numpy.random.rand(int(res[0]) + 1, int(res[1]) + 1)
+    gradients = numpy.dstack((numpy.cos(angles), numpy.sin(angles)))
+    g00 = gradients[0:-1, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
+    g10 = gradients[1:, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
+    g01 = gradients[0:-1, 1:].repeat(d[0], 0).repeat(d[1], 1)
+    g11 = gradients[1:, 1:].repeat(d[0], 0).repeat(d[1], 1)
+    # Ramps
+    n00 = numpy.sum(grid * g00, 2)
+    n10 = numpy.sum(numpy.dstack((grid[:, :, 0] - 1, grid[:, :, 1])) * g10, 2)
+    n01 = numpy.sum(numpy.dstack((grid[:, :, 0], grid[:, :, 1] - 1)) * g01, 2)
+    n11 = numpy.sum(numpy.dstack((grid[:, :, 0] - 1, grid[:, :, 1] - 1)) * g11, 2)
+    # Interpolation
+    t = f(grid)
+    n0 = n00 * (1 - t[:, :, 0]) + t[:, :, 0] * n10
+    n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
+    return numpy.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
+
+
+def fractal_noise(shape,  frequency=1, octaves=1, persistence=0.5, amplitude=1):
+    noise = numpy.zeros(shape)
+    freq = 2 ** frequency
+    for _ in range(octaves):
+        noise += amplitude * perlin_noise(shape, freq)
+        freq *= 2
+        amplitude *= persistence
+    return noise
+

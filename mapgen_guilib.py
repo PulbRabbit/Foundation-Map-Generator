@@ -1,6 +1,6 @@
 # Head
 __author__ = "Isajah"
-__version__ = "1.1.1"
+__version__ = "1.3.1"
 
 # Imports
 import tkinter as tk
@@ -13,7 +13,7 @@ from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as pp
 import matplotlib as mpl
 
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ImageFilter
 
 import os
 import subprocess
@@ -21,6 +21,7 @@ import time
 import terrain
 import assets
 import json
+from shutil import copyfile # , SameFileError
 
 # directories and file names 
 hmap_name = "heightmap.png"
@@ -43,7 +44,7 @@ NORM = 66
 
 
 class BaseWindow:
-    def __init__(self, master, prev_canvas,  easy_mode=True):
+    def __init__(self, master, prev_canvas,  easy_mode=True, labels=None):
 
         # internal variables
 
@@ -55,6 +56,8 @@ class BaseWindow:
         self.object_label = "Base Window"
         self.easy_mode = easy_mode
         self.prev_canvas = prev_canvas
+
+        self.labels = labels
 
         # initializing basic structure of the window
         self.master = master
@@ -101,8 +104,8 @@ class BaseWindow:
 
 
 class Terrain(BaseWindow):
-    def __init__(self, container, master, prev_canvas, index, easy_mode=True):
-        super().__init__(master, prev_canvas,  easy_mode=easy_mode)
+    def __init__(self, container, master, prev_canvas, index, easy_mode=True, labels=None):
+        super().__init__(master, prev_canvas,  easy_mode=easy_mode, labels=labels)
         self.wp_index = 0
         self.container = container
         self.terrain_map = numpy.full((1024, 1024), 0)
@@ -112,7 +115,7 @@ class Terrain(BaseWindow):
     def add_wp(self):
         # adding waypoints
         self.wp_index += 1
-        self.wp_list.append(Waypoint(self.wp_frame, self.wp_index, self.container, easy_mode=self.easy_mode))
+        self.wp_list.append(Waypoint(self.wp_frame, self.wp_index, self.container, self.labels, easy_mode=self.easy_mode))
 
     def get_waypoints(self):
         retlist = []
@@ -125,9 +128,9 @@ class Terrain(BaseWindow):
 
 
 class GlobalParams(BaseWindow):
-    def __init__(self, master, prev_canvas, min_height, max_height, river_level, pre_sigma, post_sigma, ws_name):
-        super().__init__(master, prev_canvas)
-
+    def __init__(self, master, prev_canvas, min_height, max_height, river_level, pre_sigma, post_sigma, ws_name,
+                 easy_mode=True, labels=None):
+        super().__init__(master, prev_canvas,  easy_mode=easy_mode, labels=labels)
         # --- initialize all internal variables
         self.min_height = min_height
         self.max_height = max_height
@@ -136,9 +139,10 @@ class GlobalParams(BaseWindow):
         self.post_sigma = post_sigma
 
         self.baseline_map = numpy.full((1024, 1024), 0)
-        self.object_label = "Global Parameters"
+        self.object_label = labels["Global"]
         self.ws_name = ws_name
 
+        self.PADX = 10
         # --- initialize all internal text representations
 
         self.str_min_height = tk.IntVar(value=self.min_height)
@@ -147,13 +151,14 @@ class GlobalParams(BaseWindow):
         self.str_river_level = tk.IntVar(value=self.river_level)
         self.str_pre_sigma = tk.IntVar(value=self.pre_sigma)
         self.str_post_sigma = tk.IntVar(value=self.post_sigma)
+        self.int_freq = tk.IntVar(value=1)
 
         # --- built head
         self.label_name = tk.Label(self.top_frame, text=self.object_label, font=("arial", 8, "bold"))
         self.label_name.grid(column=0, row=0, sticky='w')
         self.gen_btn = tk.Button(self.top_frame, text="build baseline map", command=self.generate)
         self.gen_btn.grid(column=1, row=0, sticky='we')
-        self.hmap_btn = tk.Button(self.top_frame, text="get heightmap", command=self.get_heightmap)
+        self.hmap_btn = tk.Button(self.top_frame, text=labels["Imp_Hmap_Menu"], command=self.get_heightmap)
         self.hmap_btn.grid(column=2, row=0, sticky='we')
 
         # --- built input matrix
@@ -161,19 +166,19 @@ class GlobalParams(BaseWindow):
         # min height
         self.label_min_height = tk.Label(self.main_frame, text="min height:")
         self.box_min_height = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_min_height)
-        self.min_scale = tk.Scale(self.main_frame, label="min height", orient="horizontal", length=100, resolution=50,
+        self.min_scale = tk.Scale(self.main_frame, label="min height", orient="horizontal", length=100, resolution=10,
                                   variable=self.str_min_height, to=1000)
 
         # max height 
         self.label_max_height = tk.Label(self.main_frame, text="max height:")
         self.box_max_height = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_max_height)
-        self.max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=50,
+        self.max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=10,
                                   variable=self.str_max_height, to=1000)
 
         # river level
         self.label_river = tk.Label(self.main_frame, text="river level:")
         self.box_river = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_river_level)
-        self.river_scale = tk.Scale(self.main_frame, label="river level", orient="horizontal", length=100, resolution=50,
+        self.river_scale = tk.Scale(self.main_frame, label="river level", orient="horizontal", length=100, resolution=10,
                                     variable=self.str_river_level, to=1000)
 
         # pre sigma
@@ -184,7 +189,14 @@ class GlobalParams(BaseWindow):
         self.label_post_sigma = tk.Label(self.main_frame, text="post sigma:")
         self.box_post_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_post_sigma)
 
-        self.mode_easy()
+        # frequency
+        self.label_freq= tk.Label(self.main_frame, text="frequency:")
+        self.box_freq = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_freq)
+
+        if easy_mode:
+            self.mode_easy()
+        else:
+            self.mode_normal()
 
         # build preview
 
@@ -217,16 +229,21 @@ class GlobalParams(BaseWindow):
         self.post_sigma = self.str_post_sigma.get()
         return self.post_sigma * norm
 
-    def generate(self):
+    def generate(self, fractal=True):
         # get all variables from form
         min_height = self.min_height_get(norm=NORM)
         max_height = self.max_height_get(norm=NORM)
         self.pre_sigma_get()
         self.post_sigma_get()
 
-        # Generate a base_line map, all objects will be added
-        self.baseline_map = numpy.random.randint(min_height, high=max_height, size=(1024, 1024))
-        self.baseline_map = gaussian_filter(self.baseline_map, sigma=self.pre_sigma)
+        if fractal:
+           self.baseline_map = terrain.fractal_noise((1024, 1024), octaves=5, frequency=self.int_freq.get())
+           self.baseline_map = self.baseline_map = numpy.interp(self.baseline_map, (self.baseline_map.min(), self.baseline_map.max()),
+                                         (min_height, max_height))
+        else:
+            # Generate a base_line map, all objects will be added
+            self.baseline_map = numpy.random.randint(min_height, high=max_height, size=(1024, 1024))
+            self.baseline_map = gaussian_filter(self.baseline_map, sigma=self.pre_sigma)
         pp.imsave(os.path.join(self.ws_name, partials_folder, "baseline.png"), self.baseline_map, vmin=0, vmax=MAX_16BIT)
 
         self.baseline_im = Image.open(os.path.join(self.ws_name, partials_folder, "baseline.png"))
@@ -241,7 +258,24 @@ class GlobalParams(BaseWindow):
             filetypes=(("png file", "*.png"), ("all files", "*.*"))
         )
         heightmap_path = os.path.join(heightmap_name)
-        self.baseline_map = numpy.array(Image.open(heightmap_path).convert('I'))
+        image = Image.open(heightmap_path).convert('I')
+        image = image.resize((1024, 1024), Image.ANTIALIAS)
+        self.baseline_map = numpy.array(image)
+        self.baseline_map = numpy.interp(self.baseline_map, (self.baseline_map.min(), self.baseline_map.max()),
+                                         (0, MAX_16BIT))  # normalizing heightmap to 0...255
+        pp.imsave(os.path.join(self.ws_name, partials_folder, "baseline.png"), self.baseline_map, vmin=0, vmax=MAX_16BIT)
+
+        self.baseline_im = Image.open(os.path.join(self.ws_name, partials_folder, "baseline.png"))
+
+        self.baseline_im.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+        self.prev_canvas.baseline_im = ImageTk.PhotoImage(self.baseline_im)
+        self.preview.configure(image=self.prev_canvas.baseline_im)
+
+    def load_heightmap(self):
+        heightmap_path = os.path.join(self.ws_name, "maps", "heightmap.png")
+        image = Image.open(heightmap_path).convert('I')
+        image = image.resize((1024, 1024), Image.ANTIALIAS)
+        self.baseline_map = numpy.array(image)
         self.baseline_map = numpy.interp(self.baseline_map, (self.baseline_map.min(), self.baseline_map.max()),
                                          (0, MAX_16BIT))  # normalizing heightmap to 0...255
         pp.imsave(os.path.join(self.ws_name, partials_folder, "baseline.png"), self.baseline_map, vmin=0, vmax=MAX_16BIT)
@@ -276,55 +310,58 @@ class GlobalParams(BaseWindow):
         self.max_scale.grid_remove()
         self.river_scale.grid_remove()
         # remove widgets:
-        self.label_max_height.grid(column=0, row=1, sticky='w', padx=PADX)
-        self.box_max_height.grid(column=1, row=1, sticky='w', padx=PADX)
+        self.label_max_height.grid(column=0, row=1, sticky='w', padx=self.PADX)
+        self.box_max_height.grid(column=1, row=1, sticky='w', padx=self.PADX)
         # min height
-        self.label_min_height.grid(column=2, row=1, sticky='w', padx=PADX)
-        self.box_min_height.grid(column=3, row=1, sticky='w', padx=PADX)
+        self.label_min_height.grid(column=2, row=1, sticky='w', padx=self.PADX)
+        self.box_min_height.grid(column=3, row=1, sticky='w', padx=self.PADX)
         # river level
-        self.label_river.grid(column=4, row=1, sticky='w', padx=PADX)
-        self.box_river.grid(column=5, row=1, sticky='w', padx=PADX)
+        self.label_river.grid(column=4, row=1, sticky='w', padx=self.PADX)
+        self.box_river.grid(column=5, row=1, sticky='w', padx=self.PADX)
         # pre sigma
-        self.label_pre_sigma.grid(column=0, row=2, sticky='w', padx=PADX)
-        self.box_pre_sigma.grid(column=1, row=2, sticky='w', padx=PADX)
+        self.label_pre_sigma.grid(column=0, row=2, sticky='w', padx=self.PADX)
+        self.box_pre_sigma.grid(column=1, row=2, sticky='w', padx=self.PADX)
         # post sigma
-        self.label_post_sigma.grid(column=2, row=2, sticky='w', padx=PADX)
-        self.box_post_sigma.grid(column=3, row=2, sticky='w', padx=PADX)
-
+        self.label_post_sigma.grid(column=2, row=2, sticky='w', padx=self.PADX)
+        self.box_post_sigma.grid(column=3, row=2, sticky='w', padx=self.PADX)
+        # Freq
+        self.label_freq.grid(column=4, row=2, sticky='w', padx=self.PADX)
+        self.box_freq.grid(column=5, row=2, sticky='w', padx=self.PADX)
 
 class AssetParams(BaseWindow):
-    def __init__(self, master, prev_canvas, ws_name, easy_mode=True):
-        super().__init__(master, prev_canvas)
+    def __init__(self, master, prev_canvas, ws_name, easy_mode=True, labels=None):
+        super().__init__(master, prev_canvas, easy_mode=easy_mode, labels=labels)
         self.ws_name = ws_name
-        self.easy_mode = easy_mode
         # --- initialize all internal text representations
-        self.str_grass_level = tk.IntVar(value=200)
-        self.str_grass_sigma = tk.IntVar(value=5)
+        self.int_grass_level = tk.IntVar(value=200)
+        self.int_grass_sigma = tk.IntVar(value=5)
+        self.int_grass_delta = tk.IntVar(value=20)
+        self.int_grass_divert = tk.IntVar(value=10)
 
         self.str_berries_dense = tk.IntVar(value=10)
         self.str_berries_group = tk.IntVar(value=5)
-        self.str_berries_steep = tk.IntVar(value=10)
+        self.str_berries_steep = tk.IntVar(value=20)
         self.str_berries_min = tk.IntVar(value=250)
         self.str_berries_max = tk.IntVar(value=1000)
         self.str_berries_sigma = tk.IntVar(value=5)
 
         self.str_stone_dense = tk.StringVar(value=10)
         self.str_stone_group = tk.StringVar(value=5)
-        self.str_stone_steep = tk.StringVar(value=10)
-        self.str_stone_min = tk.StringVar(value=600)
+        self.str_stone_steep = tk.StringVar(value=20)
+        self.str_stone_min = tk.StringVar(value=300)
         self.str_stone_max = tk.StringVar(value=1000)
         self.str_stone_sigma = tk.StringVar(value=5)
 
         self.str_ore_dense = tk.StringVar(value=5)
         self.str_ore_group = tk.StringVar(value=0)
-        self.str_ore_steep = tk.StringVar(value=10)
-        self.str_ore_min = tk.StringVar(value=600)
+        self.str_ore_steep = tk.StringVar(value=30)
+        self.str_ore_min = tk.StringVar(value=350)
         self.str_ore_max = tk.StringVar(value=1000)
         self.str_ore_sigma = tk.StringVar(value=5)
 
         self.str_fish_dense = tk.StringVar(value=50)
         self.str_fish_group = tk.StringVar(value=5)
-        self.str_fish_max = tk.StringVar(value=400)
+        self.str_fish_max = tk.StringVar(value=150)
 
         # initialize labels for the preview
         self.prev_material = tk.Label(self.prev_canvas)
@@ -351,150 +388,163 @@ class AssetParams(BaseWindow):
         self.prev_index_list = {'material': 0, 'berries': 0, 'stone': 0, 'ore': 0, 'fish': 0, 'decid': 0, 'conif': 0}
 
         # --- built head
-        self.object_label = "Asset Parameters"
+        self.object_label = labels["Asset_P"]
         self.label_name = tk.Label(self.top_frame, text=self.object_label, font=("arial", 8, "bold"))
         self.label_name.grid(column=0, row=0, sticky='w')
-        self.gen_btn = tk.Button(self.top_frame, text="build asset maps", command=self.build_asset_maps)
+        self.gen_btn = tk.Button(self.top_frame, text=labels["Build_Asset_Btn"], command=self.build_asset_maps)
         self.gen_btn.grid(column=1, row=0, sticky='e')
 
         # --- built input matrix
-        self.label_grass_headline = tk.Label(self.main_frame, text="grass parameter", font=("arial", 8, "bold"))
+        self.label_grass_headline = tk.Label(self.main_frame, text=labels["Grass_P"], font=("arial", 8, "bold"))
         self.label_grass_headline.grid(column=0, row=0, columnspan=4, sticky='w', padx=PADX)
-        self.grass_btn = tk.Button(self.main_frame, text="build material map", command=self.build_material_map)
+        self.grass_btn = tk.Button(self.main_frame, text=labels["Build_Mat_Btn"], command=self.build_material_map)
 
         # Grass Level
-        self.label_grass_level = tk.Label(self.main_frame, text="level:")
-        self.box_grass_level = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_grass_level)
-        self.grass_level_scale = tk.Scale(self.main_frame, label="grass level", orient="horizontal", length=100, resolution=50,
-                                          variable=self.str_grass_level, to=1000)
+        self.label_grass_level = tk.Label(self.main_frame, text=labels["level"])
+        self.box_grass_level = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_grass_level)
+        self.grass_level_scale = tk.Scale(self.main_frame, label=labels["level"], orient="horizontal", length=100, resolution=5,
+                                          variable=self.int_grass_level, to=1000)
 
         # Grass Sigma
-        self.label_grass_sigma = tk.Label(self.main_frame, text="sigma:")
-        self.box_grass_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_grass_sigma)
-        self.grass_sigma_scale = tk.Scale(self.main_frame, label="smoothener", orient="horizontal", length=100, resolution=1,
-                                          variable=self.str_grass_sigma, to=20)
+        self.label_grass_sigma = tk.Label(self.main_frame, text=labels["sigma"])
+        self.box_grass_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_grass_sigma)
+        self.grass_sigma_scale = tk.Scale(self.main_frame, label=labels["sigma"], orient="horizontal", length=100, resolution=1,
+                                          variable=self.int_grass_sigma, to=50)
+
+        # Grass Delta
+        self.label_grass_delta = tk.Label(self.main_frame, text=labels["delta"])
+        self.box_grass_delta = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_grass_delta)
+        self.grass_delta_scale = tk.Scale(self.main_frame, label=labels["delta"], orient="horizontal", length=100, resolution=5,
+                                          variable=self.int_grass_delta, to=200)
+
+        # Grass Diversity
+        self.label_grass_div = tk.Label(self.main_frame, text=labels["div"])
+        self.box_grass_div = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_grass_divert)
+        self.grass_div_scale = tk.Scale(self.main_frame, label=labels["div"], orient="horizontal", length=100, resolution=5,
+                                          variable=self.int_grass_divert, to=200)
 
         # --- Berries ----
-        self.label_berries_headline = tk.Label(self.main_frame, text="berries parameters", font=("arial", 8, "bold"))
+        self.label_berries_headline = tk.Label(self.main_frame, text=labels["Berries_P"], font=("arial", 8, "bold"))
         self.label_berries_headline.grid(column=0, row=6, sticky='w', padx=PADX, columnspan=4)
-        self.berries_btn = tk.Button(self.main_frame, text="build berries map", command=self.build_berries_map)
+        self.berries_btn = tk.Button(self.main_frame, text=labels["Build_Berries_Btn"], command=self.build_berries_map)
         # berries steep
-        self.label_berries_steep = tk.Label(self.main_frame, text="steep:")
+        self.label_berries_steep = tk.Label(self.main_frame, text=labels["steep"])
         self.box_berries_steep = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_berries_steep)
-        self.berries_steep_scale = tk.Scale(self.main_frame, label="steepness", orient="horizontal", length=100, resolution=5,
+        self.berries_steep_scale = tk.Scale(self.main_frame, label=labels["steep"], orient="horizontal", length=100, resolution=5,
                                             variable=self.str_berries_steep, to=100)
         # berries dense
-        self.label_berries_dense = tk.Label(self.main_frame, text="dense:")
+        self.label_berries_dense = tk.Label(self.main_frame, text=labels["dense"])
         self.box_berries_dense = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_berries_dense)
-        self.berries_dense_scale = tk.Scale(self.main_frame, label="density", orient="horizontal", length=100, resolution=1,
-                                            variable=self.str_berries_dense, to=20)
+        self.berries_dense_scale = tk.Scale(self.main_frame, label=labels["dense"], orient="horizontal", length=100, resolution=1,
+                                            variable=self.str_berries_dense, to=50)
         # berries group
-        self.label_berries_group = tk.Label(self.main_frame, text="group:")
+        self.label_berries_group = tk.Label(self.main_frame, text=labels["group"])
         self.box_berries_group = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_berries_group)
-        self.berries_group_scale = tk.Scale(self.main_frame, label="grouping", orient="horizontal", length=100, resolution=1,
+        self.berries_group_scale = tk.Scale(self.main_frame, label=labels["group"], orient="horizontal", length=100, resolution=1,
                                             variable=self.str_berries_group, to=100)
         # berries min
-        self.label_berries_min = tk.Label(self.main_frame, text="min:")
+        self.label_berries_min = tk.Label(self.main_frame, text=labels["min"])
         self.box_berries_min = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_berries_min)
-        self.berries_min_scale = tk.Scale(self.main_frame, label="min height", orient="horizontal", length=100, resolution=50,
+        self.berries_min_scale = tk.Scale(self.main_frame, label="min height", orient="horizontal", length=100, resolution=5,
                                           variable=self.str_berries_min, to=1000)
         # berries max
-        self.label_berries_max = tk.Label(self.main_frame, text="max:")
+        self.label_berries_max = tk.Label(self.main_frame, text=labels["max"])
         self.box_berries_max = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_berries_max)
-        self.berries_max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=50,
+        self.berries_max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=5,
                                           variable=self.str_berries_max, to=1000)
         # berries sigma
-        self.label_berries_sigma = tk.Label(self.main_frame, text="sigma:")
+        self.label_berries_sigma = tk.Label(self.main_frame, text=labels["sigma"])
         self.box_berries_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_berries_sigma)
 
         # --- stone ----
-        self.label_stone_headline = tk.Label(self.main_frame, text="stone parameters", font=("arial", 8, "bold"))
+        self.label_stone_headline = tk.Label(self.main_frame, text=labels["Rock_P"], font=("arial", 8, "bold"))
         self.label_stone_headline.grid(column=0, row=9, sticky='w', padx=PADX, columnspan=4)
-        self.stone_btn = tk.Button(self.main_frame, text="build stone map", command=self.build_stone_map)
+        self.stone_btn = tk.Button(self.main_frame, text=labels["Build_Stone_Btn"], command=self.build_stone_map)
         # stone steep
-        self.label_stone_steep = tk.Label(self.main_frame, text="steep:")
+        self.label_stone_steep = tk.Label(self.main_frame, text=labels["steep"])
         self.box_stone_steep = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_stone_steep)
-        self.stone_steep_scale = tk.Scale(self.main_frame, label="steepness", orient="horizontal", length=100, resolution=5,
+        self.stone_steep_scale = tk.Scale(self.main_frame, label=labels["steep"], orient="horizontal", length=100, resolution=5,
                                           variable=self.str_stone_steep, to=100)
         # stone dense
-        self.label_stone_dense = tk.Label(self.main_frame, text="dense:")
+        self.label_stone_dense = tk.Label(self.main_frame, text=labels["dense"])
         self.box_stone_dense = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_stone_dense)
-        self.stone_dense_scale = tk.Scale(self.main_frame, label="density", orient="horizontal", length=100, resolution=1,
-                                          variable=self.str_stone_dense, to=20)
+        self.stone_dense_scale = tk.Scale(self.main_frame, label=labels["dense"], orient="horizontal", length=100, resolution=1,
+                                          variable=self.str_stone_dense, to=50)
         # stone group
-        self.label_stone_group = tk.Label(self.main_frame, text="group:")
+        self.label_stone_group = tk.Label(self.main_frame, text=labels["group"])
         self.box_stone_group = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_stone_group)
-        self.stone_group_scale = tk.Scale(self.main_frame, label="grouping", orient="horizontal", length=100, resolution=1,
+        self.stone_group_scale = tk.Scale(self.main_frame, label=labels["group"], orient="horizontal", length=100, resolution=1,
                                           variable=self.str_stone_group, to=100)
         # stone min
-        self.label_stone_min = tk.Label(self.main_frame, text="min:")
+        self.label_stone_min = tk.Label(self.main_frame, text=labels["min"])
         self.box_stone_min = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_stone_min)
-        self.stone_min_scale = tk.Scale(self.main_frame, label="min height", orient="horizontal", length=100, resolution=50,
+        self.stone_min_scale = tk.Scale(self.main_frame, label=labels["min"], orient="horizontal", length=100, resolution=5,
                                         variable=self.str_stone_min, to=1000)
         # stone max
-        self.label_stone_max = tk.Label(self.main_frame, text="max:")
+        self.label_stone_max = tk.Label(self.main_frame, text=labels["max"])
         self.box_stone_max = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_stone_max)
-        self.stone_max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=50,
+        self.stone_max_scale = tk.Scale(self.main_frame, label=labels["max"], orient="horizontal", length=100, resolution=5,
                                         variable=self.str_stone_max, to=1000)
         # stone sigma
-        self.label_stone_sigma = tk.Label(self.main_frame, text="sigma:")
+        self.label_stone_sigma = tk.Label(self.main_frame, text=labels["sigma"])
         self.box_stone_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_stone_sigma)
 
         # --- ore ----
-        self.label_ore_headline = tk.Label(self.main_frame, text=" iron ore parameters", font=("arial", 8, "bold"))
+        self.label_ore_headline = tk.Label(self.main_frame, text=labels["Iron_P"], font=("arial", 8, "bold"))
         self.label_ore_headline.grid(column=0, row=12, sticky='w', padx=PADX, columnspan=4)
-        self.ore_btn = tk.Button(self.main_frame, text="build iron ore map", command=self.build_ore_map)
+        self.ore_btn = tk.Button(self.main_frame, text=labels["Build_Ore_Btn"], command=self.build_ore_map)
 
         # ore steep
-        self.label_ore_steep = tk.Label(self.main_frame, text="steep:")
+        self.label_ore_steep = tk.Label(self.main_frame, text=labels["steep"])
         self.box_ore_steep = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_ore_steep)
-        self.ore_steep_scale = tk.Scale(self.main_frame, label="steepness", orient="horizontal", length=100, resolution=5,
+        self.ore_steep_scale = tk.Scale(self.main_frame, label=labels["steep"], orient="horizontal", length=100, resolution=5,
                                         variable=self.str_ore_steep, to=100)
         # ore dense
-        self.label_ore_dense = tk.Label(self.main_frame, text="dense:")
+        self.label_ore_dense = tk.Label(self.main_frame, text=labels["dense"])
         self.box_ore_dense = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_ore_dense)
-        self.ore_dense_scale = tk.Scale(self.main_frame, label="density", orient="horizontal", length=100, resolution=1,
-                                        variable=self.str_ore_dense, to=20)
+        self.ore_dense_scale = tk.Scale(self.main_frame, label=labels["dense"], orient="horizontal", length=100, resolution=1,
+                                        variable=self.str_ore_dense, to=50)
         # ore group
-        self.label_ore_group = tk.Label(self.main_frame, text="group:")
+        self.label_ore_group = tk.Label(self.main_frame, text=labels["group"])
         self.box_ore_group = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_ore_group)
-        self.ore_group_scale = tk.Scale(self.main_frame, label="grouping", orient="horizontal", length=100, resolution=1,
+        self.ore_group_scale = tk.Scale(self.main_frame, label=labels["group"], orient="horizontal", length=100, resolution=1,
                                         variable=self.str_ore_group, to=100)
         # ore min
-        self.label_ore_min = tk.Label(self.main_frame, text="min:")
+        self.label_ore_min = tk.Label(self.main_frame, text=labels["min"])
         self.box_ore_min = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_ore_min)
-        self.ore_min_scale = tk.Scale(self.main_frame, label="min height", orient="horizontal", length=100, resolution=50,
+        self.ore_min_scale = tk.Scale(self.main_frame, label=labels["min"], orient="horizontal", length=100, resolution=5,
                                       variable=self.str_ore_min, to=1000)
         # ore max
-        self.label_ore_max = tk.Label(self.main_frame, text="max:")
+        self.label_ore_max = tk.Label(self.main_frame, text=labels["max"])
         self.box_ore_max = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_ore_max)
-        self.ore_max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=50,
+        self.ore_max_scale = tk.Scale(self.main_frame, label=labels["max"], orient="horizontal", length=100, resolution=5,
                                       variable=self.str_ore_max, to=1000)
         # ore sigma
-        self.label_ore_sigma = tk.Label(self.main_frame, text="sigma:")
+        self.label_ore_sigma = tk.Label(self.main_frame, text=labels["sigma"])
         self.box_ore_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_ore_sigma)
 
         # --- fish ----
-        self.label_fish_headline = tk.Label(self.main_frame, text="fish parameters", font=("arial", 8, "bold"))
+        self.label_fish_headline = tk.Label(self.main_frame, text=labels["Fish_P"], font=("arial", 8, "bold"))
         self.label_fish_headline.grid(column=0, row=15, sticky='w', padx=PADX, columnspan=4)
-        self.fish_btn = tk.Button(self.main_frame, text="build fish map", command=self.build_fish_map)
+        self.fish_btn = tk.Button(self.main_frame, text=labels["Build_Fish_Btn"], command=self.build_fish_map)
         # fish dense
-        self.label_fish_dense = tk.Label(self.main_frame, text="dense:")
+        self.label_fish_dense = tk.Label(self.main_frame, text=labels["dense"])
         self.box_fish_dense = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_fish_dense)
-        self.fish_dense_scale = tk.Scale(self.main_frame, label="density", orient="horizontal", length=100, resolution=1,
-                                         variable=self.str_fish_dense, to=100)
+        self.fish_dense_scale = tk.Scale(self.main_frame, label=labels["dense"], orient="horizontal", length=100, resolution=5,
+                                         variable=self.str_fish_dense, to=200)
         # fish group
-        self.label_fish_group = tk.Label(self.main_frame, text="group:")
+        self.label_fish_group = tk.Label(self.main_frame, text=labels["group"])
         self.box_fish_group = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_fish_group)
-        self.fish_group_scale = tk.Scale(self.main_frame, label="grouping", orient="horizontal", length=100, resolution=1,
+        self.fish_group_scale = tk.Scale(self.main_frame, label=labels["group"], orient="horizontal", length=100, resolution=1,
                                          variable=self.str_fish_group, to=100)
         # fish max
-        self.label_fish_max = tk.Label(self.main_frame, text="max:")
+        self.label_fish_max = tk.Label(self.main_frame, text=labels["max"])
         self.box_fish_max = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_fish_max)
-        self.fish_max_scale = tk.Scale(self.main_frame, label="max height", orient="horizontal", length=100, resolution=50,
+        self.fish_max_scale = tk.Scale(self.main_frame, label=labels["max"], orient="horizontal", length=100, resolution=5,
                                        variable=self.str_fish_max, to=1000)
         if self.easy_mode:
             self.mode_easy()
+            print(self.easy_mode)
         else:
             self.mode_normal()
 
@@ -504,8 +554,10 @@ class AssetParams(BaseWindow):
             self.param_from_data(data)
 
     def param_from_data(self, data):
-        self.str_grass_level.set(data['grass']['level'])
-        self.str_grass_sigma.set(data['grass']['sigma'])
+        self.int_grass_level.set(data['grass'].get("level", 200))
+        self.int_grass_sigma.set(data['grass'].get("sigma", 5))
+        self.int_grass_delta.set(data['grass'].get("delta", 0))
+        self.int_grass_divert.set(data['grass'].get("div", 0))
 
         self.str_berries_dense.set(data['berries']['density'])
         self.str_berries_group.set(data['berries']['grouping'])
@@ -544,17 +596,33 @@ class AssetParams(BaseWindow):
 
     def build_material_map(self):
         self.heightmap = self.load_heightmap()
-        grass_level = self.str_grass_level.get() * NORM
-        grass_sigma = self.str_grass_sigma.get()
-        file_name = os.path.join(self.ws_name, map_folder, "material_mask.png")
-        print(self.ws_name)
-        print(file_name)
-        self.material_map = assets.material_map(self.heightmap, grass_level, grass_sigma)
-        color_list = [(0, "red"), (1, "lime")]
-        green_red = mpl.colors.LinearSegmentedColormap.from_list("name", color_list)
-        pp.imsave(file_name, self.material_map, vmin=0, vmax=255, cmap=green_red)
 
+        grass_level = self.int_grass_level.get() * NORM
+        grass_sigma = self.int_grass_sigma.get()
+        grass_delta = self.int_grass_delta.get() * NORM
+        grass_div = self.int_grass_divert.get() * NORM * 10
+        diversity_map = numpy.random.randint(-grass_div, high=grass_div, size=(1024, 1024))
+        diversity_map = gaussian_filter(diversity_map, sigma=10)
+        heightmap = self.heightmap + diversity_map
+        file_name = os.path.join(self.ws_name, map_folder, "material_mask.png")
+
+        red = (grass_level + grass_delta) / MAX_16BIT
+        green = (grass_level - grass_delta) / MAX_16BIT
+        if red >= 0.999:
+            red = 0.999
+        if green <= 0.001:
+            green = 0.001
+        elif green >= 0.998:
+            green = 0.998
+        if red <= green:
+            red = green + 0.001
+        color_list = [(0.0, "lime"), (green, "lime"), (red, "red"), (1.0, "red")]
+        green_red = mpl.colors.LinearSegmentedColormap.from_list("name", color_list)
+
+        pp.imsave(file_name, heightmap, vmin=0, vmax=MAX_16BIT, cmap=green_red)
         image = Image.open(file_name)
+        image = image.filter(ImageFilter.GaussianBlur(radius=grass_sigma))
+        image.save(file_name)
         image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
 
         if self.prev_index_list['material'] == 0:
@@ -568,6 +636,40 @@ class AssetParams(BaseWindow):
             self.prev_canvas.mmap_handle[self.prev_index_list['material'] - 1] = ImageTk.PhotoImage(image)
             self.prev_material.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['material'] - 1])
         self.prev_canvas.master.update()
+
+    def import_materialmap(self):
+        materialmap_name = filedialog.askopenfilename(
+            initialdir=os.path.join(map_folder),
+            title=self.labels["Imp_Mmap_Menu"],
+            filetypes=(("png file", "*.png"), ("all files", "*.*")))
+        materialmap_name = os.path.join(materialmap_name)
+        if materialmap_name is not os.path.join(self.ws_name, "Maps", mmap_name) and materialmap_name is not '':
+            copyfile(materialmap_name, os.path.join(self.ws_name, "Maps", mmap_name))
+        else:
+            print("No File Copied")
+        self.load_material_map()
+
+    def load_material_map(self, file_name=None):
+        if file_name is None:
+            file_name = os.path.join(self.ws_name, map_folder, "material_mask.png")
+        if os.path.isfile(file_name):
+            image = Image.open(file_name)
+            image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+
+            if self.prev_index_list['material'] == 0:
+                self.prev_canvas.mmap_handle.append(ImageTk.PhotoImage(image))
+                self.prev_material.configure(image=self.prev_canvas.mmap_handle[-1])
+                self.prev_material.pack()
+                self.prev_material_label.configure(text="material map")
+                self.prev_material_label.pack()
+                self.prev_index_list['material'] = len(self.prev_canvas.mmap_handle)
+            else:
+                self.prev_canvas.mmap_handle[self.prev_index_list['material'] - 1] = ImageTk.PhotoImage(image)
+                self.prev_material.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['material'] - 1])
+            self.prev_canvas.master.update()
+        else:
+            print("no material map loaded")
+
 
     def build_berries_map(self):
         self.heightmap = self.load_heightmap()
@@ -602,6 +704,38 @@ class AssetParams(BaseWindow):
             self.prev_berries.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['berries'] - 1])
         self.prev_canvas.master.update()
 
+    def import_berriesmap(self):
+        map_name = filedialog.askopenfilename(
+            initialdir=os.path.join(map_folder),
+            title=self.labels["Imp_Bmap_Menu"],
+            filetypes=(("png file", "*.png"), ("all files", "*.*")))
+        map_name = os.path.join(map_name)
+        if map_name is not os.path.join(self.ws_name, "Maps", "berries_density.png") and map_name is not '':
+            copyfile(map_name, os.path.join(self.ws_name, "Maps", "berries_density.png"))
+        else:
+            print("No file copied")
+        self.load_berries_map()
+
+
+    def load_berries_map(self):
+
+        file_name = os.path.join(self.ws_name, map_folder, "berries_density.png")
+        if os.path.isfile(file_name):
+            image = Image.open(file_name)
+            image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+
+            if self.prev_index_list['berries'] == 0:
+                self.prev_canvas.mmap_handle.append(ImageTk.PhotoImage(image))
+                self.prev_berries.configure(image=self.prev_canvas.mmap_handle[-1])
+                self.prev_berries.pack()
+                self.prev_berries_label.configure(text="berries density map")
+                self.prev_berries_label.pack()
+                self.prev_index_list['berries'] = len(self.prev_canvas.mmap_handle)
+            else:
+                self.prev_canvas.mmap_handle[self.prev_index_list['berries'] - 1] = ImageTk.PhotoImage(image)
+                self.prev_berries.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['berries'] - 1])
+            self.prev_canvas.master.update()
+
     def build_stone_map(self):
         self.heightmap = self.load_heightmap()
 
@@ -635,6 +769,36 @@ class AssetParams(BaseWindow):
             self.prev_stone.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['stone'] - 1])
         self.prev_canvas.master.update()
 
+    def import_stonemap(self):
+        map_name = filedialog.askopenfilename(
+            initialdir=os.path.join(map_folder),
+            title=self.labels["Imp_Smap_Menu"],
+            filetypes=(("png file", "*.png"), ("all files", "*.*")))
+        map_name = os.path.join(map_name)
+        if map_name is not os.path.join(self.ws_name, "Maps", "rock_density.png") and map_name is not '':
+            copyfile(map_name, os.path.join(self.ws_name, "Maps", "rock_density.png"))
+        else:
+            print("No file copied")
+        self.load_stone_map()
+
+    def load_stone_map(self):
+        file_name = os.path.join(self.ws_name, map_folder, "rock_density.png")
+        if os.path.isfile(file_name):
+            image = Image.open(file_name)
+            image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+
+            if self.prev_index_list['stone'] == 0:
+                self.prev_canvas.mmap_handle.append(ImageTk.PhotoImage(image))
+                self.prev_stone.configure(image=self.prev_canvas.mmap_handle[-1])
+                self.prev_stone.pack()
+                self.prev_stone_label.configure(text="stone density map")
+                self.prev_stone_label.pack()
+                self.prev_index_list['stone'] = len(self.prev_canvas.mmap_handle)
+            else:
+                self.prev_canvas.mmap_handle[self.prev_index_list['stone'] - 1] = ImageTk.PhotoImage(image)
+                self.prev_stone.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['stone'] - 1])
+            self.prev_canvas.master.update()
+
     def build_ore_map(self):
         self.heightmap = self.load_heightmap()
         file_name = os.path.join(self.ws_name, map_folder, "iron_density.png")
@@ -666,6 +830,36 @@ class AssetParams(BaseWindow):
             self.prev_ore.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['ore'] - 1])
         self.prev_canvas.master.update()
 
+    def import_oremap(self):
+        map_name = filedialog.askopenfilename(
+            initialdir=os.path.join(map_folder),
+            title=self.labels["Imp_Imap_Menu"],
+            filetypes=(("png file", "*.png"), ("all files", "*.*")))
+        map_name = os.path.join(map_name)
+        if map_name is not os.path.join(self.ws_name, "Maps", "iron_density.png") and map_name is not '':
+            copyfile(map_name, os.path.join(self.ws_name, "Maps", "iron_density.png"))
+        else:
+            print("No file copied")
+        self.load_ore_map()
+
+    def load_ore_map(self):
+        file_name = os.path.join(self.ws_name, map_folder, "iron_density.png")
+        if os.path.isfile(file_name):
+            image = Image.open(file_name)
+            image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+
+            if self.prev_index_list['ore'] == 0:
+                self.prev_canvas.mmap_handle.append(ImageTk.PhotoImage(image))
+                self.prev_ore.configure(image=self.prev_canvas.mmap_handle[-1])
+                self.prev_ore.pack()
+                self.prev_ore_label.configure(text="ore density map")
+                self.prev_ore_label.pack()
+                self.prev_index_list['ore'] = len(self.prev_canvas.mmap_handle)
+            else:
+                self.prev_canvas.mmap_handle[self.prev_index_list['ore'] - 1] = ImageTk.PhotoImage(image)
+                self.prev_ore.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['ore'] - 1])
+            self.prev_canvas.master.update()
+
     def build_fish_map(self):
         self.heightmap = self.load_heightmap()
 
@@ -680,20 +874,39 @@ class AssetParams(BaseWindow):
 
         pp.imsave(file_name, self.fish_map, vmin=0, vmax=255, cmap='gray')
 
-        image = Image.open(file_name)
-        image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
-
-        if self.prev_index_list['fish'] == 0:
-            self.prev_canvas.mmap_handle.append(ImageTk.PhotoImage(image))
-            self.prev_fish.configure(image=self.prev_canvas.mmap_handle[-1])
-            self.prev_fish.pack()
-            self.prev_fish_label.configure(text="fish density map")
-            self.prev_fish_label.pack()
-            self.prev_index_list['fish'] = len(self.prev_canvas.mmap_handle)
-        else:
-            self.prev_canvas.mmap_handle[self.prev_index_list['fish'] - 1] = ImageTk.PhotoImage(image)
-            self.prev_fish.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['fish'] - 1])
+        self.load_fish_map()
         self.prev_canvas.master.update()
+
+    def import_fishmap(self):
+        map_name = filedialog.askopenfilename(
+            initialdir=os.path.join(map_folder),
+            title=self.labels["Imp_Fmap_Menu"],
+            filetypes=(("png file", "*.png"), ("all files", "*.*")))
+        map_name = os.path.join(map_name)
+        if map_name is not os.path.join(self.ws_name, "Maps", "fish_density.png") and map_name is not '':
+            copyfile(map_name, os.path.join(self.ws_name, "Maps", "fish_density.png"))
+        else:
+            print("No file copied")
+        self.load_fish_map()
+
+    def load_fish_map(self):
+        file_name = os.path.join(self.ws_name, map_folder, "fish_density.png")
+        if os.path.isfile(file_name):
+            image = Image.open(file_name)
+            image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+
+            if self.prev_index_list['fish'] == 0:
+                self.prev_canvas.mmap_handle.append(ImageTk.PhotoImage(image))
+                self.prev_fish.configure(image=self.prev_canvas.mmap_handle[-1])
+                self.prev_fish.pack()
+                self.prev_fish_label.configure(text="fish density map")
+                self.prev_fish_label.pack()
+                self.prev_index_list['fish'] = len(self.prev_canvas.mmap_handle)
+            else:
+                self.prev_canvas.mmap_handle[self.prev_index_list['fish'] - 1] = ImageTk.PhotoImage(image)
+                self.prev_fish.configure(image=self.prev_canvas.mmap_handle[self.prev_index_list['fish'] - 1])
+            self.prev_canvas.master.update()
+
 
     def build_cutout_mask(self):
         self.cutout_mask = assets.asset_cutout_mask(self.berries_map, self.stone_map, self.ore_map, 5)
@@ -715,6 +928,10 @@ class AssetParams(BaseWindow):
         self.box_grass_level.grid_remove()
         self.label_grass_sigma.grid_remove()
         self.box_grass_sigma.grid_remove()
+        self.label_grass_delta.grid_remove()
+        self.box_grass_delta.grid_remove()
+        self.label_grass_div.grid_remove()
+        self.box_grass_div.grid_remove()
 
         # removing widgets from grid
         self.berries_btn.grid_remove()
@@ -771,6 +988,10 @@ class AssetParams(BaseWindow):
         self.grass_btn.grid(column=2, row=0, sticky='we', padx=PADX)
         self.grass_level_scale.grid(column=0, row=1)
         self.grass_sigma_scale.grid(column=1, row=1)
+        # self.grass_delta_scale.grid(column=2, row=1)
+        self.int_grass_delta.set(0)
+        # self.grass_div_scale.grid(column=3, row=1)
+        self.int_grass_divert.set(0)
 
         # loading scale widgets to grid
         self.berries_btn.grid(column=2, row=6, sticky='we', padx=PADX)
@@ -808,6 +1029,7 @@ class AssetParams(BaseWindow):
         self.grass_btn.grid_remove()
         self.grass_level_scale.grid_remove()
         self.grass_sigma_scale.grid_remove()
+        self.grass_delta_scale.grid_remove()
 
         # loading scale widgets to grid
         self.berries_btn.grid_remove()
@@ -845,6 +1067,10 @@ class AssetParams(BaseWindow):
         self.box_grass_level.grid(column=1, row=1, sticky='w', padx=PADX)
         self.label_grass_sigma.grid(column=2, row=1, sticky='w', padx=PADX)
         self.box_grass_sigma.grid(column=3, row=1, sticky='w', padx=PADX)
+        self.label_grass_delta.grid(column=4, row=1, sticky='w', padx=PADX)
+        self.box_grass_delta.grid(column=5, row=1, sticky='w', padx=PADX)
+        self.label_grass_div.grid(column=6, row=1, sticky='w', padx=PADX)
+        self.box_grass_div.grid(column=7, row=1, sticky='w', padx=PADX)
 
         # --- Berries ----
         self.berries_btn.grid(column=5, columnspan=3, row=6, sticky='e')
@@ -891,12 +1117,12 @@ class AssetParams(BaseWindow):
         self.box_ore_sigma.grid(column=3, row=14, sticky='w', padx=PADX)
         # --- fish ----
         self.fish_btn.grid(column=5, columnspan=3, row=15, sticky='e')
-        self.label_fish_dense.grid(column=0, row=16, sticky='w', padx=PADX)
-        self.box_fish_dense.grid(column=1, row=16, sticky='w', padx=PADX)
-        self.label_fish_group.grid(column=2, row=16, sticky='w', padx=PADX)
-        self.box_fish_group.grid(column=3, row=16, sticky='w', padx=PADX)
-        self.label_fish_max.grid(column=4, row=16, sticky='w', padx=PADX)
-        self.box_fish_max.grid(column=5, row=16, sticky='w', padx=PADX)
+        self.label_fish_dense.grid(column=2, row=16, sticky='w', padx=PADX)
+        self.box_fish_dense.grid(column=3, row=16, sticky='w', padx=PADX)
+        self.label_fish_group.grid(column=4, row=16, sticky='w', padx=PADX)
+        self.box_fish_group.grid(column=5, row=16, sticky='w', padx=PADX)
+        self.label_fish_max.grid(column=6, row=16, sticky='w', padx=PADX)
+        self.box_fish_max.grid(column=7, row=16, sticky='w', padx=PADX)
 
 
 def lua_prefab_to_str(name, comment="create density prefab", density=0.9, weight=0.1,
@@ -904,6 +1130,7 @@ def lua_prefab_to_str(name, comment="create density prefab", density=0.9, weight
                       orient_min="{ 0, -180, 0 }", orient_max="{ 0, 180, 0 }",
                       scale_min=0.85, scale_max=1.15,
                       color_min="{ 0.8, 0.8, 0.8, 1 }", color_max="{ 1, 1, 1, 1 }"):
+
     map_name = name.upper() + '_DENSITY_MAP'
     resource_name = 'PREFAB_RESOURCE_' + name.upper()
 
@@ -938,15 +1165,16 @@ def lua_prefab_to_str(name, comment="create density prefab", density=0.9, weight
 
 
 class TreeMap:
-    def __init__(self, container, master, prev_canvas, index, ws_name, easy_mode=True):
+    def __init__(self, container, master, prev_canvas, index, ws_name, labels, easy_mode=True):
 
-        self.int_steep = tk.IntVar(value=20)
+        self.int_steep = tk.IntVar(value=30)
         self.int_max = tk.IntVar(value=1000)
         self.int_min = tk.IntVar(value=300)
         self.int_sigma = tk.IntVar(value=3)
         self.float_dense = tk.DoubleVar(value=0.8)
 
-        self.object_label = "Tree Density Map" + str(index)
+        self.labels = labels
+        self.object_label = labels["TreeDensity_Title"] + str(index)
         self.master = master
         self.frame = tk.Frame(self.master, relief=tk.GROOVE, borderwidth=1)
         self.frame.pack(side='top', expand=True, fill='both')
@@ -976,32 +1204,32 @@ class TreeMap:
         # --- built head
         self.label_name = tk.Label(self.frame, text=self.object_label, font=("arial", 8, "bold"))
         self.label_name.grid(column=0, row=0, columnspan=3, sticky='w')
-        self.gen_btn = tk.Button(self.frame, text="build", command=self.build_map)
-        self.del_btn = tk.Button(self.frame, text="delete", command=self.destroy)
-        self.add_btn = tk.Button(self.frame, text="add", command=self.add_type)
+        self.gen_btn = tk.Button(self.frame, text=labels["build"], command=self.build_map)
+        self.del_btn = tk.Button(self.frame, text=labels["delete"], command=self.destroy)
+        self.add_btn = tk.Button(self.frame, text=labels["add"], command=self.add_type)
 
         # steepness
-        self.label_steep = tk.Label(self.frame, text="steep:")
+        self.label_steep = tk.Label(self.frame, text=labels["steep"])
         self.box_steep = tk.Entry(self.frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_steep)
-        self.steep_scale = tk.Scale(self.frame, label="steepness", orient="horizontal", length=100, resolution=5,
+        self.steep_scale = tk.Scale(self.frame, label=labels["steep"], orient="horizontal", length=100, resolution=5,
                                     variable=self.int_steep, to=100)
         # min height
-        self.label_min = tk.Label(self.frame, text="min:")
+        self.label_min = tk.Label(self.frame, text=labels["min"])
         self.box_min = tk.Entry(self.frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_min)
-        self.min_scale = tk.Scale(self.frame, label="min height", orient="horizontal", length=100, resolution=50,
+        self.min_scale = tk.Scale(self.frame, label=labels["min"], orient="horizontal", length=100, resolution=10,
                                   variable=self.int_min, to=1000)
         # max height
-        self.label_max = tk.Label(self.frame, text="max:")
+        self.label_max = tk.Label(self.frame, text=labels["max"])
         self.box_max = tk.Entry(self.frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_max)
-        self.max_scale = tk.Scale(self.frame, label="max height", orient="horizontal", length=100, resolution=50,
+        self.max_scale = tk.Scale(self.frame, label=labels["max"], orient="horizontal", length=100, resolution=10,
                                   variable=self.int_max, to=1000)
         # sigma
-        self.label_sigma = tk.Label(self.frame, text="sigma:")
+        self.label_sigma = tk.Label(self.frame, text=labels["sigma"])
         self.box_sigma = tk.Entry(self.frame, width=ENTRY_WIDTH, justify='right', textvariable=self.int_sigma)
         # dense
-        self.label_dense = tk.Label(self.frame, text="dense:")
+        self.label_dense = tk.Label(self.frame, text=labels["dense"])
         self.box_dense = tk.Entry(self.frame, width=ENTRY_WIDTH, justify='right', textvariable=self.float_dense)
-        self.dense_scale = tk.Scale(self.frame, label="density", orient="horizontal", length=100, resolution=0.1,
+        self.dense_scale = tk.Scale(self.frame, label=labels["dense"], orient="horizontal", length=100, resolution=0.1,
                                     variable=self.float_dense, from_=0.1, to=0.9)
 
         if self.easy_mode:
@@ -1014,15 +1242,27 @@ class TreeMap:
 
         self.container.update()
 
+    def re_index(self, index):
+        old_file = os.path.join(self.ws_name, "maps", self.get_final_file_name())
+        self.index = index
+        self.object_label = self.labels["TreeDensity_Title"] + str(index)
+        self.label_name.configure(text=self.object_label)
+        self.file_name = self.get_final_file_name()
+        os.rename(old_file, os.path.join(self.ws_name, "maps", self.file_name))
+        self.preview_label.configure(text=self.object_label)
+
     def add_type(self):
         self.type_index += 1
-        self.tree_types.append(TreeType(self.type_frame, self.type_index, self.container,easy_mode=self.easy_mode))
+        self.tree_types.append(TreeType(self.type_frame, self.type_index, self.container, self.labels, easy_mode=self.easy_mode))
 
     def destroy(self):
         self.frame.destroy()
         self.preview.destroy()
         self.preview_label.destroy()
         self.deleted = True
+        file_name = os.path.join(self.ws_name, "maps", self.get_final_file_name())
+        if os.path.isfile(file_name):
+            os.remove(file_name)
 
     def load_heightmap(self):
         # get heightmap
@@ -1054,6 +1294,16 @@ class TreeMap:
         image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
 
         self.index = self.build_preview(self.im_handle, self.object_label, file_name, self.index)
+        self.prev_canvas.master.update()
+
+    def load_map(self):
+        self.file_name = self.get_final_file_name()
+        file_name = os.path.join(self.ws_name, map_folder, self.file_name)
+        if os.path.isfile(file_name):
+            image = Image.open(file_name)
+            image.thumbnail((PREV_SIZE, PREV_SIZE), Image.ANTIALIAS)
+
+            self.index = self.build_preview(self.im_handle, self.object_label, file_name, self.index)
         self.prev_canvas.master.update()
 
     def get_final_file_name(self):
@@ -1125,6 +1375,8 @@ class TreeMap:
         self.max_scale.grid(column=4, row=1, columnspan=2, sticky='w', padx=PADX)
         self.dense_scale.grid(column=0, row=2, columnspan=2, sticky='w', padx=PADX)
 
+        self.easy_mode = True
+
     def mode_normal(self):
         # removing easy elements to grid
         self.gen_btn.grid_remove()
@@ -1150,9 +1402,10 @@ class TreeMap:
         self.label_dense.grid(column=0, row=2, sticky='w', padx=PADX)
         self.box_dense.grid(column=1, row=2, sticky='w', padx=PADX)
 
+        self.easy_mode = False
 
 class TreeType:
-    def __init__(self, master, index, container, easy_mode=True):
+    def __init__(self, master, index, container, labels, easy_mode=True):
         self.tree_type = tk.StringVar(value="oak")
         self.weight = tk.DoubleVar(value=3.0)
         self.min_scale = tk.DoubleVar(value=0.8)
@@ -1172,12 +1425,12 @@ class TreeType:
         self.color_names = ["normal", "dark", "yellow", "red", "brown", "green", "olive", "blue", "purple"]
         self.color_schemes = {"normal": ((0.8, 0.8, 0.8), (1.0, 1.0, 1.0)),
                               "dark": ((0.4, 0.4, 0.4), (0.7, 0.7, 0.7)),
-                              "yellow": ((0.7, 0.7, 0.4), (0.9, 0.9, 0.8)),
+                              "yellow": ((0.9, 0.8, 0.1), (1.0, 0.9, 0.5)),
                               "red": ((0.7, 0.4, 0.4), (0.9, 0.8, 0.8)),
                               "brown": ((0.4, 0.25, 0.15), (0.8, 0.5, 0.3)),
                               "green": ((0.2, 0.4, 0.2), (0.4, 0.8, 0.4)),
                               "olive": ((0.4, 0.4, 0.2), (0.8, 0.8, 0.4)),
-                              "blue": ((0.4, 0.4, 0.7), (0.8, 0.8, 0.9)),
+                              "blue": ((0.0, 0.5, 1.0), (0.5, 0.75, 1.0)),
                               "purple": ((0.5, 0.2, 0.5), (1.0, 0.4, 1.0))}
         self.selected_color = tk.StringVar(value="normal")
         self.size_names = ["small", "normal", "large", "very large"]
@@ -1192,21 +1445,21 @@ class TreeType:
                                "abundant": 5.0}
         self.selected_weight = tk.StringVar(value="normal")
 
-        self.tree_type_label = tk.Label(self.frame, text="Tree Type" + str(index), width=10, justify="left", font=("arial", 8, "bold"))
+        self.tree_type_label = tk.Label(self.frame, text=labels["TreeType_Title"] + str(index), width=10, justify="left", font=("arial", 8, "bold"))
         self.tree_type_label.grid(column=0, row=0, sticky='w')
-        self.type_label = tk.Label(self.frame, text="type: ")
+        self.type_label = tk.Label(self.frame, text=labels["type"])
         self.type_label.grid(column=1, row=0, sticky='w')
         self.options = tk.OptionMenu(self.frame, self.tree_type, *self.option_list)
         self.options.grid(column=4, row=0, columnspan=4, sticky='w')
         self.options.configure(width=10)
-        self.weight_label = tk.Label(self.frame, text="weight:")
+        self.weight_label = tk.Label(self.frame, text=labels["type"])
         self.weight_label.grid(column=1, row=1, sticky='w')
         self.box_weight = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.weight, justify='right')
         self.box_weight.grid(column=2, row=1, sticky='w')
         self.weight_options = tk.OptionMenu(self.frame, self.selected_weight, *self.weight_schemes, command=self.weight_from_scheme)
         self.weight_options.configure(width=10)
         self.weight_options.grid(column=4, row=1, sticky='w')
-        self.scale_label = tk.Label(self.frame, text="scale:")
+        self.scale_label = tk.Label(self.frame, text=labels["size"])
         self.scale_label.grid(column=1, row=2, sticky='w')
         self.box_min_scale = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.min_scale, justify='right')
         self.box_min_scale.grid(column=2, row=2, sticky='w')
@@ -1215,16 +1468,16 @@ class TreeType:
         self.size_options = tk.OptionMenu(self.frame, self.selected_size, *self.size_schemes, command=self.size_from_scheme)
         self.size_options.configure(width=10)
         self.size_options.grid(column=4, row=2, sticky='w')
-        self.color_label = tk.Label(self.frame, text="color:")
+        self.color_label = tk.Label(self.frame, text=labels["color"])
         self.color_label.grid(column=1, row=3, sticky='w')
-        self.color_min_btn = tk.Button(self.frame, text="min", command=self.pick_min, bg=min_color)
+        self.color_min_btn = tk.Button(self.frame, text=labels["min"], command=self.pick_min, bg=min_color)
         self.color_min_btn.grid(column=2, row=3, sticky='w')
-        self.color_max_btn = tk.Button(self.frame, text="max", command=self.pick_max, bg=max_color)
+        self.color_max_btn = tk.Button(self.frame, text=labels["max"], command=self.pick_max, bg=max_color)
         self.color_max_btn.grid(column=3, row=3, sticky='w')
         self.color_options = tk.OptionMenu(self.frame, self.selected_color, *self.color_schemes, command=self.color_from_scheme)
         self.color_options.configure(width=10)
         self.color_options.grid(column=4, row=3, sticky='w')
-        self.del_btn = tk.Button(self.frame, text="delete", command=self.destroy)
+        self.del_btn = tk.Button(self.frame, text=labels["delete"], command=self.destroy)
         self.del_btn.grid(column=8, row=0, sticky='w')
         self.container.update()
 
@@ -1234,14 +1487,14 @@ class TreeType:
             self.mode_normal()
 
     def pick_min(self):
-        color, hex_str = colorchooser.askcolor()
+        color, hex_str = colorchooser.askcolor(color=self.min_color_hex())
         if color is not None:
             self.min_color = color[0] / 256, color[1] / 256, color[2] / 256
             print(color, self.max_color)
             self.color_min_btn.configure(bg=hex_str)
 
     def pick_max(self):
-        color, hex_str = colorchooser.askcolor()
+        color, hex_str = colorchooser.askcolor(color=self.max_color_hex())
         if color is not None:
             self.max_color = color[0] / 256, color[1] / 256, color[2] / 256
             print(color, self.max_color)
@@ -1330,6 +1583,8 @@ class TreeType:
         self.color_min_btn.grid_remove()
         self.color_max_btn.grid_remove()
 
+        self.easy_mode = True
+
     def mode_normal(self):
         # remove widgets
         self.box_weight.grid(column=2, row=1, sticky='w')
@@ -1338,9 +1593,10 @@ class TreeType:
         self.color_min_btn.grid(column=2, row=3, sticky='w')
         self.color_max_btn.grid(column=3, row=3, sticky='w')
 
+        self.easy_mode = False
 
 class River(Terrain):
-    def __init__(self, container, master, prev_canvas, index, ws_name, easy_mode=True):
+    def __init__(self, container, master, prev_canvas, index, ws_name, labels, easy_mode=True):
         super().__init__(container, master, prev_canvas, index, easy_mode=easy_mode)
 
         # internal variables
@@ -1350,8 +1606,9 @@ class River(Terrain):
 
         self.river = terrain.ImprovedRiver(self.width, self.div, self.sigma)
         self.ws_name = ws_name
+        self.labels = labels
 
-        self.object_label = "River" + str(index)
+        self.object_label = labels["River_Title"] + str(index)
         self.str_width = tk.StringVar()
         self.str_width.set(str(self.width))
         self.str_div = tk.StringVar()
@@ -1362,29 +1619,29 @@ class River(Terrain):
         # Top Frame Area        
         self.label_name = tk.Label(self.top_frame, text=self.object_label, font=("arial", 8, "bold"))
         self.label_name.grid(column=0, row=0, sticky='w')
-        self.gen_btn = tk.Button(self.top_frame, text="generate", command=self.generate)
+        self.gen_btn = tk.Button(self.top_frame, text=labels["build"], command=self.generate)
         self.gen_btn.grid(column=3, row=0, sticky='e')
-        self.del_btn = tk.Button(self.top_frame, text="delete", command=self.destroy)
+        self.del_btn = tk.Button(self.top_frame, text=labels["delete"], command=self.destroy)
         self.del_btn.grid(column=4, row=0, sticky='e')
-        self.add_wp_btn = tk.Button(self.top_frame, text="add WP", command=self.add_wp)
+        self.add_wp_btn = tk.Button(self.top_frame, text=labels["addWP"], command=self.add_wp)
         self.add_wp_btn.grid(column=5, row=0, sticky='e')
 
         # Main Frame Area
-        self.label_width = tk.Label(self.main_frame, text="width: ")
+        self.label_width = tk.Label(self.main_frame, text=labels["width"])
         self.label_width.grid(column=0, row=1, sticky='w')
         self.box_width = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_width)
         self.box_width.grid(column=1, row=1, sticky='w')
-        self.width_scale = tk.Scale(self.main_frame, label="width", orient="horizontal", length=100, resolution=1,
+        self.width_scale = tk.Scale(self.main_frame, label=labels["width"], orient="horizontal", length=100, resolution=1,
                                     variable=self.str_width, from_=1, to=50)
 
-        self.label_div = tk.Label(self.main_frame, text="diversity: ")
+        self.label_div = tk.Label(self.main_frame, text=labels["div"])
         self.label_div.grid(column=2, row=1, sticky='w')
         self.box_div = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_div)
         self.box_div.grid(column=3, row=1, sticky='w')
-        self.div_scale = tk.Scale(self.main_frame, label="diversity", orient="horizontal", length=100, resolution=5,
+        self.div_scale = tk.Scale(self.main_frame, label=labels["div"], orient="horizontal", length=100, resolution=5,
                                   variable=self.str_div, from_=5, to=25)
 
-        self.label_sigma = tk.Label(self.main_frame, text="sigma: ")
+        self.label_sigma = tk.Label(self.main_frame, text=labels["sigma"])
         self.label_sigma.grid(column=4, row=1, sticky='w')
         self.box_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, justify='right', textvariable=self.str_sigma)
         self.box_sigma.grid(column=5, row=1, sticky='w')
@@ -1399,7 +1656,7 @@ class River(Terrain):
         self.index = self.build_preview(self.prev_canvas.river_im, self.object_label, file_name, self.index, init=True)
 
     def generate(self):
-        file_name = os.path.join(self.ws_name, partials_folder, "rivermap" + str(self.index) + ".png")
+        file_name = os.path.join(self.ws_name, partials_folder, self.labels["River_Title"] + str(self.index) + ".png")
 
         self.width = int(self.str_width.get())
         self.div = int(self.str_div.get())
@@ -1442,6 +1699,8 @@ class River(Terrain):
         self.div_scale.grid(column=1, row=1, sticky='w')
         self.str_sigma.set("5")
 
+        self.easy_mode = True
+
     def mode_normal(self):
         # remove easy widgets:
         self.width_scale.grid_remove()
@@ -1457,13 +1716,14 @@ class River(Terrain):
         self.label_sigma.grid(column=4, row=1, sticky='w')
         self.box_sigma.grid(column=5, row=1, sticky='w')
 
+        self.easy_mode = False
 
 class Mountain(Terrain):
-    def __init__(self, container, master, prev_canvas, index, ws_name, easy_mode=True):
-        super().__init__(container, master, prev_canvas, index, easy_mode=easy_mode)
+    def __init__(self, container, master, prev_canvas, index, ws_name, labels, easy_mode=True):
+        super().__init__(container, master, prev_canvas, index, easy_mode=easy_mode, labels=labels)
 
         # internal variables
-        self.object_label = "Mountain" + str(index)
+        self.object_label = labels["Mountain_Title"] + str(index)
 
         self.height = 500
         self.spread = 200
@@ -1482,38 +1742,38 @@ class Mountain(Terrain):
 
         self.label_name = tk.Label(self.top_frame, text=self.object_label, font=("arial", 8, "bold"))
         self.label_name.grid(column=0, row=0, sticky='w')
-        self.gen_btn = tk.Button(self.top_frame, text="generate", command=self.generate)
+        self.gen_btn = tk.Button(self.top_frame, text=labels["build"], command=self.generate)
         self.gen_btn.grid(column=2, row=0, sticky='w')
-        self.del_btn = tk.Button(self.top_frame, text="delete", command=self.destroy)
+        self.del_btn = tk.Button(self.top_frame, text=labels["delete"], command=self.destroy)
         self.del_btn.grid(column=3, row=0, sticky='w')
-        self.add_wp_btn = tk.Button(self.top_frame, text="add WP", command=self.add_wp)
+        self.add_wp_btn = tk.Button(self.top_frame, text=labels["addWP"], command=self.add_wp)
         self.add_wp_btn.grid(column=4, row=0, sticky='w')
 
-        self.label_height = tk.Label(self.main_frame, text="height: ")
+        self.label_height = tk.Label(self.main_frame, text=labels["height"])
         self.label_height.grid(column=0, row=1, padx=PADX)
         self.box_height = tk.Entry(self.main_frame, width=ENTRY_WIDTH, textvariable=self.str_height)
         self.box_height.grid(column=1, row=1, padx=PADX)
-        self.height_scale = tk.Scale(self.main_frame, label="height", orient="horizontal", length=100, resolution=50,
+        self.height_scale = tk.Scale(self.main_frame, label=labels["height"], orient="horizontal", length=100, resolution=50,
                                      variable=self.str_height, from_=-1000, to=1000)
 
-        self.label_spread = tk.Label(self.main_frame, text="spread: ")
+        self.label_spread = tk.Label(self.main_frame, text=labels["spread"])
         self.label_spread.grid(column=2, row=1, padx=PADX)
         self.box_spread = tk.Entry(self.main_frame, width=ENTRY_WIDTH, textvariable=self.str_spread)
         self.box_spread.grid(column=3, row=1, padx=PADX)
-        self.spread_scale = tk.Scale(self.main_frame, label="spread", orient="horizontal", length=100, resolution=50,
+        self.spread_scale = tk.Scale(self.main_frame, label=labels["spread"], orient="horizontal", length=100, resolution=50,
                                      variable=self.str_spread, from_=50, to=500)
 
-        self.label_div = tk.Label(self.main_frame, text="diversity: ")
+        self.label_div = tk.Label(self.main_frame, text=labels["div"])
         self.label_div.grid(column=4, row=1, padx=PADX)
         self.box_div = tk.Entry(self.main_frame, width=ENTRY_WIDTH, textvariable=self.str_div)
         self.box_div.grid(column=5, row=1, padx=PADX)
-        self.label_dense = tk.Label(self.main_frame, text="density: ")
+        self.label_dense = tk.Label(self.main_frame, text=labels["div"])
         self.label_dense.grid(column=0, row=2, padx=PADX)
         self.box_dense = tk.Entry(self.main_frame, width=ENTRY_WIDTH, textvariable=self.str_dense)
         self.box_dense.grid(column=1, row=2, padx=PADX)
-        self.dense_scale = tk.Scale(self.main_frame, label="density", orient="horizontal", length=100, resolution=5,
+        self.dense_scale = tk.Scale(self.main_frame, label=labels["dense"], orient="horizontal", length=100, resolution=5,
                                     variable=self.str_dense, from_=10, to=50)
-        self.label_sigma = tk.Label(self.main_frame, text="sigma: ")
+        self.label_sigma = tk.Label(self.main_frame, text=labels["sigma"])
         self.label_sigma.grid(column=2, row=2, padx=PADX)
         self.box_sigma = tk.Entry(self.main_frame, width=ENTRY_WIDTH, textvariable=self.str_sigma)
         self.box_sigma.grid(column=3, row=2, padx=PADX)
@@ -1587,6 +1847,8 @@ class Mountain(Terrain):
         self.spread_scale.grid(column=1, row=1, padx=PADX)
         self.dense_scale.grid(column=2, row=1, padx=PADX)
 
+        self.easy_mode = True
+
     def mode_normal(self):
 
         self.label_height.grid(column=0, row=1, padx=PADX)
@@ -1604,9 +1866,10 @@ class Mountain(Terrain):
         self.spread_scale.grid_remove()
         self.dense_scale.grid_remove()
 
+        self.easy_mode = False
 
 class Waypoint:
-    def __init__(self, master, index, container, easy_mode):
+    def __init__(self, master, index, container, labels, easy_mode=False):
         self.x = index * 100
         self.y = index * 100
 
@@ -1620,22 +1883,22 @@ class Waypoint:
         self.frame = tk.Frame(master)
         self.frame.grid(column=0, sticky='w')
 
-        self.wp_label = tk.Label(self.frame, text="Waypoint" + str(index), width=10, font=("arial", 8, "bold"))
+        self.wp_label = tk.Label(self.frame, text=labels["Waypoint_Title"] + str(index), width=10, font=("arial", 8, "bold"))
         self.wp_label.grid(column=0, row=0, sticky='w')
 
         self.label_x = tk.Label(self.frame, text="X: ")
         self.label_x.grid(column=1, row=0, sticky='w')
         self.box_x = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.str_x)
         self.box_x.grid(column=2, row=0, sticky='w')
-        self.x_scale = tk.Scale(self.frame, label="X coordinate", orient="horizontal", length=100, resolution=50, variable=self.str_x,
+        self.x_scale = tk.Scale(self.frame, label="X", orient="horizontal", length=100, resolution=10, variable=self.str_x,
                                 from_=-100, to=1100)
         self.label_y = tk.Label(self.frame, text="Y: ")
         self.label_y.grid(column=3, row=0, sticky='w')
         self.box_y = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.str_y)
         self.box_y.grid(column=4, row=0, sticky='w')
-        self.y_scale = tk.Scale(self.frame, label="Y coordinate", orient="horizontal", length=100, resolution=50, variable=self.str_y,
+        self.y_scale = tk.Scale(self.frame, label="Y", orient="horizontal", length=100, resolution=10, variable=self.str_y,
                                 from_=-100, to=1100)
-        self.del_btn = tk.Button(self.frame, text="delete", command=self.destroy)
+        self.del_btn = tk.Button(self.frame, text=labels["delete"], command=self.destroy)
         self.del_btn.grid(column=5, row=0, sticky='w')
 
         if self.easy_mode:
@@ -1714,27 +1977,27 @@ class VillagePath:
         self.label_x_entry.grid(column=1, row=1, sticky='w')
         self.box_x_entry = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.str_x_entry)
         self.box_x_entry.grid(column=2, row=1, sticky='w')
-        self.scale_x_entry = tk.Scale(self.frame, label="X Entry:", variable=self.str_x_entry, from_=10, to=1010,
-                                      resolution=10, orient="horizontal", length=160)
+        self.scale_x_entry = tk.Scale(self.frame, label="X Entry:", variable=self.str_x_entry, from_=5, to=1020,
+                                      resolution=5, orient="horizontal", length=160)
         self.label_y_entry = tk.Label(self.frame, text="Y Entry: ")
         self.label_y_entry.grid(column=3, row=1, sticky='w')
         self.box_y_entry = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.str_y_entry)
         self.box_y_entry.grid(column=4, row=1, sticky='w')
-        self.scale_y_entry = tk.Scale(self.frame, label="Y Entry:", variable=self.str_y_entry, from_=10, to=1010,
-                                      resolution=10, orient="horizontal", length=160)
+        self.scale_y_entry = tk.Scale(self.frame, label="Y Entry:", variable=self.str_y_entry, from_=5, to=1020,
+                                      resolution=5, orient="horizontal", length=160)
 
         self.label_x_exit = tk.Label(self.frame, text="X Exit: ")
         self.label_x_exit.grid(column=1, row=2, sticky='w')
         self.box_x_exit = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.str_x_exit)
         self.box_x_exit.grid(column=2, row=2, sticky='w')
-        self.scale_x_exit = tk.Scale(self.frame, label="X Exit", variable=self.str_x_exit, from_=10, to=1010,
-                                     resolution=10, orient="horizontal", length=160)
+        self.scale_x_exit = tk.Scale(self.frame, label="X Exit", variable=self.str_x_exit, from_=5, to=1020,
+                                     resolution=5, orient="horizontal", length=160)
         self.label_y_exit = tk.Label(self.frame, text="Y Exit: ")
         self.label_y_exit.grid(column=3, row=2, sticky='w')
         self.box_y_exit = tk.Entry(self.frame, width=ENTRY_WIDTH, textvariable=self.str_y_exit)
         self.box_y_exit.grid(column=4, row=2, sticky='w')
-        self.scale_y_exit = tk.Scale(self.frame, label="Y Exit", variable=self.str_y_exit, from_=10, to=1010,
-                                     resolution=10, orient="horizontal", length=160)
+        self.scale_y_exit = tk.Scale(self.frame, label="Y Exit", variable=self.str_y_exit, from_=5, to=1020,
+                                     resolution=5, orient="horizontal", length=160)
 
         self.del_btn = tk.Button(self.frame, text="delete", command=self.destroy)
         self.del_btn.grid(column=5, row=0, sticky='w')
@@ -1888,18 +2151,19 @@ class Status:
 
 
 class MapInfo:
-    def __init__(self, height, water_level, mmap_height, heightmap, easy_mode=False):
+    def __init__(self, height, water_level, mmap_height, heightmap, base_dir, easy_mode=False):
 
         self.object_label = "General Map Infos"
         self.show = False
         self.flag_done = False
-
+        self.base_dir = base_dir
         # --- initialize all internal text representations
         self.name = tk.StringVar(value="My Map")
+        self.subtitle = tk.StringVar(value="Part of the MyMaps Series")
         self.id = tk.StringVar(value="MY_MAP_ID")
         self.author = tk.StringVar(value="MyName")
         self.description = tk.StringVar(value="My Map - A beautiful map, I created")
-        self.version = tk.StringVar(value="0.0.1")
+        self.version = tk.StringVar(value="1.0.0")
 
         self.height = height
         self.str_height = tk.StringVar(value=str(self.height))
@@ -1930,58 +2194,63 @@ class MapInfo:
         self.box_map_name = tk.Entry(self.frame, width=40, justify='left', textvariable=self.name)
         self.box_map_name.grid(column=1, row=0, columnspan=2, sticky='w', padx=PADX)
 
+        self.label_subtitle = tk.Label(self.frame, text="Name Addition: ")
+        self.label_subtitle.grid(column=0, row=1, sticky='w', padx=PADX)
+        self.box_subtitle = tk.Entry(self.frame, width=40, justify='left', textvariable=self.subtitle)
+        self.box_subtitle.grid(column=1, row=1, columnspan=2, sticky='w', padx=PADX)
+
         self.label_id = tk.Label(self.frame, text="Map ID: ")
-        self.label_id.grid(column=0, row=1, sticky='w', padx=PADX)
+        self.label_id.grid(column=0, row=2, sticky='w', padx=PADX)
         self.box_id = tk.Entry(self.frame, width=40, justify='left', textvariable=self.id)
         self.box_id.bind('<Return>', self.upper_id)
         self.box_id.bind('<FocusOut>', self.upper_id)
-        self.box_id.grid(column=1, row=1, columnspan=2, sticky='w', padx=PADX)
+        self.box_id.grid(column=1, row=2, columnspan=2, sticky='w', padx=PADX)
         self.id_btn = tk.Button(self.frame, text="+", command=self.suggest_id)
-        self.id_btn.grid(column=3, row=1, sticky='w')
+        self.id_btn.grid(column=3, row=2, sticky='w')
         self.id_btn_tt = CreateToolTip(self.id_btn, "Sets a default ID from the map name.")
 
         self.label_author = tk.Label(self.frame, text="Author: ")
-        self.label_author.grid(column=0, row=2, sticky='w', padx=PADX)
+        self.label_author.grid(column=0, row=3, sticky='w', padx=PADX)
         self.box_author = tk.Entry(self.frame, width=40, justify='left', textvariable=self.author)
-        self.box_author.grid(column=1, row=2, columnspan = 2, sticky='w', padx=PADX)
+        self.box_author.grid(column=1, row=3, columnspan=2, sticky='w', padx=PADX)
         self.author_btn = tk.Button(self.frame, text="+", command=self.suggest_author)
-        self.author_btn.grid(column=3, row=2, sticky='w')
+        self.author_btn.grid(column=3, row=3, sticky='w')
         self.author_btn_tt = CreateToolTip(self.author_btn, "Sets your login name as author")
 
         self.label_version = tk.Label(self.frame, text="Version: ")
-        self.label_version.grid(column=0, row=3, sticky='w', padx=PADX)
+        self.label_version.grid(column=0, row=4, sticky='w', padx=PADX)
         self.box_version = tk.Entry(self.frame, width=40, justify='left', textvariable=self.version)
-        self.box_version.grid(column=1, row=3, columnspan=2, sticky='w', padx=PADX)
+        self.box_version.grid(column=1, row=4, columnspan=2, sticky='w', padx=PADX)
 
         self.label_comment = tk.Label(self.frame, text="Description: ")
-        self.label_comment.grid(column=0, row=4, sticky='w', padx=PADX)
+        self.label_comment.grid(column=0, row=5, sticky='w', padx=PADX)
         self.box_comment = tk.Entry(self.frame, width=40, justify='left', textvariable=self.description)
-        self.box_comment.grid(column=1, row=4, columnspan=2, sticky='w', padx=PADX)
+        self.box_comment.grid(column=1, row=5, columnspan=2, sticky='w', padx=PADX)
         self.comment_btn = tk.Button(self.frame, text="+", command=self.suggest_description)
-        self.comment_btn.grid(column=3, row=4, sticky='w')
+        self.comment_btn.grid(column=3, row=5, sticky='w')
         self.comment_btn_tt = CreateToolTip(self.comment_btn, "Sets a default description.")
 
-        ttk.Separator(self.frame).grid(column=0, row=5, columnspan=3, sticky='we', padx=PADX)
+        ttk.Separator(self.frame).grid(column=0, row=6, columnspan=3, sticky='we', padx=PADX)
 
         self.label_height = tk.Label(self.frame, text="height: ")
-        self.label_height.grid(column=0, row=6, sticky='w', padx=PADX)
+        self.label_height.grid(column=0, row=7, sticky='w', padx=PADX)
         self.box_height = tk.Entry(self.frame, width=5, justify='right', textvariable=self.str_height)
         self.height_scale = tk.Scale(self.frame, orient="horizontal", length=200, resolution=5, variable=self.str_height, from_=5, to=200,
                                      showvalue=0)
         self.label_water_level = tk.Label(self.frame, text="water level: ")
-        self.label_water_level.grid(column=0, row=7, sticky='w', padx=PADX)
+        self.label_water_level.grid(column=0, row=8, sticky='w', padx=PADX)
         self.box_water_level = tk.Entry(self.frame, width=5, justify='right', textvariable=self.str_water_level)
         self.water_scale = tk.Scale(self.frame, orient="horizontal", length=200, resolution=1, variable=self.str_water_level, showvalue=0,
                                     from_=-5, to=200)
         self.water_btn = tk.Button(self.frame, text="+", command=self.suggest_water_level)
-        self.water_btn.grid(column=3, row=7, sticky='w')
+        self.water_btn.grid(column=3, row=8, sticky='w')
         self.water_btn_tt = CreateToolTip(self.water_btn, "Sets the water level in relation to height an material map grass level.")
 
-        ttk.Separator(self.frame).grid(column=0, row=8, columnspan=5, sticky='we', padx=PADX)
+        ttk.Separator(self.frame).grid(column=0, row=9, columnspan=5, sticky='we', padx=PADX)
         self.canvas = tk.Canvas(self.frame, height=200, width=360, bg='white')
-        self.canvas.grid(column=0, row=9, columnspan=4)
+        self.canvas.grid(column=0, row=10, columnspan=4)
 
-        ttk.Separator(self.frame).grid(column=0, row=10, columnspan=4, sticky='we', padx=PADX)
+        ttk.Separator(self.frame).grid(column=0, row=11, columnspan=4, sticky='we', padx=PADX)
         self.axis_height = tk.Label(self.frame, text="preview")
         self.axis_height.grid(column=0, row=12, sticky='w', padx=PADX)
         self.cut_scale = tk.Scale(self.frame, orient="horizontal", length=200, resolution=20, variable=self.int_cut_level, showvalue=0,
@@ -2022,7 +2291,7 @@ class MapInfo:
             self.win.deiconify()
             self.show = True
         else:
-            self.__init__(self.height, self.water_level, self.mmap_height, self.heightmap)
+            self.__init__(self.height, self.water_level, self.mmap_height, self.heightmap, base_dir=self.base_dir)
             self.mode_easy()
             self.show = True
             self.win.deiconify()
@@ -2034,7 +2303,14 @@ class MapInfo:
         self.id.set(map_id)
 
     def suggest_author(self):
-        self.author.set(os.getlogin())
+        """Suggest a map Author by either using the Default User in the Options, or logged in user"""
+        # check if Optionsfile exists, if so, fetch data
+        if os.path.isfile(os.path.join(self.base_dir, "Jsons", "Options.json")):
+            file_name = os.path.join(self.base_dir, "Jsons", "Options.json")
+            with open(file_name) as json_file:
+                data = json.load(json_file)
+        # set the autor either with the default author or alternativly get the PC User
+        self.author.set(data.get("Default_Author", os.getlogin()))
 
     def suggest_description(self):
         self.description.set(self.name.get() + " - ")
@@ -2042,22 +2318,22 @@ class MapInfo:
     def suggest_water_level(self):
         mmap_height = self.mmap_height.get()
         mmap_height -= 50
-        mmap_height = mmap_height * int(self.str_height.get()) / 1000
+        mmap_height = int(mmap_height * int(self.str_height.get()) / 1000)
         self.str_water_level.set(str(mmap_height))
         return mmap_height
 
     def mode_easy(self):
-        self.height_scale.grid(column=2, row=6, sticky='e', padx=PADX)
-        self.water_scale.grid(column=2, row=7, sticky='e', padx=PADX)
-        self.box_height.grid(column=1, row=6, sticky='e', padx=PADX)
-        self.box_water_level.grid(column=1, row=7, sticky='e', padx=PADX)
+        self.height_scale.grid(column=2, row=7, sticky='e', padx=PADX)
+        self.water_scale.grid(column=2, row=8, sticky='e', padx=PADX)
+        self.box_height.grid(column=1, row=7, sticky='e', padx=PADX)
+        self.box_water_level.grid(column=1, row=8, sticky='e', padx=PADX)
 
     def mode_normal(self):
         # deprecated
         self.height_scale.grid_remove()
         self.water_scale.grid_remove()
-        self.box_height.grid(column=1, row=6, sticky='e', padx=PADX)
-        self.box_water_level.grid(column=1, row=7, sticky='e', padx=PADX)
+        self.box_height.grid(column=1, row=7, sticky='e', padx=PADX)
+        self.box_water_level.grid(column=1, row=8, sticky='e', padx=PADX)
 
     def draw_canvas(self):
         height = int(self.str_height.get())
@@ -2078,13 +2354,13 @@ class MapInfo:
             self.axis_btn.configure(text="Axis: Y")
 
 class About:
-    def __init__(self, base_dir):
-        self.object_label = "About"
+    def __init__(self, base_dir, labels):
+        self.object_label = labels['About_Menu']
         self.show = False
         self.base_dir = base_dir
         # --- built window
         self.win = tk.Toplevel()
-        self.win.geometry("+500+100")
+        self.win.geometry("+500+50")
         # self.win.overrideredirect(1)
         self.win.title(self.object_label)
         self.frame = tk.Frame(self.win)
@@ -2093,29 +2369,23 @@ class About:
         self.label_name = tk.Label(self.frame, text=self.object_label, font="Arial 16 bold")
         self.label_name.grid(column=0, row=0, sticky='we')
         try:
-            self.image = ImageTk.PhotoImage(Image.open(os.path.join(self.base_dir, "Resources", "logo.png")))
+            image = Image.open(os.path.join(self.base_dir, "Resources", "logo.png"))
+            image.thumbnail((256, 256), Image.ANTIALIAS)
+            self.image = ImageTk.PhotoImage(image)
             self.donate_image = tk.Label(self.frame, image=self.image)
             self.donate_image.grid(column=0, row=1)
         except OSError:
             print("About failed")
         self.about_text = tk.Text(self.frame)
-        self.about_text.insert(tk.END, "Hello Foundation(r) friend, this is the Unofficial Foundation Map Editor.\n"
-                                       "Unofficial is the key word here, since I programed this on my own and I'm not\n"
-                                       "associated with Polymorph Studios (r), nor do I own any rights to the game\n"
-                                       "'Foundation' (r).\n"
-                                       "This software is provided for free and open source, under GNU GPL\n"
-                                       "(see http://www.gnu.org/licenses/ )\n"
-                                       "This program is distributed in the hope that it will be useful,\n"
-                                       "but WITHOUT ANY WARRANTY; without even the implied warranty of \n"
-                                       "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. \n\n"
-                                       "If you need help, do not hesitate to contact me via the\n"
-                                       "Foundation Discord server: @Isajah at https://discordapp.com/\n\n"
-                                       "Logo and Icon are modified from:\n"
-                                       "'Mountain free icon' by Freepik from www.flaticon.com")
+        self.about_text.insert(tk.END,labels['about_text'])
         self.about_text.grid(column=0, row=2, padx=PADX, pady=PADX)
         self.about_text.configure(state=tk.DISABLED)
+        self.author_label = tk.Label(self.frame, text="Author: " + str(__author__))
+        self.author_label.grid(column=0, row=3, sticky = "we")
+        self.version_label = tk.Label(self.frame, text="Version: " + str(__version__))
+        self.version_label.grid(column=0, row=4, sticky="we")
         self.done_btn = tk.Button(self.frame, text="back", command=self.withdraw)
-        self.done_btn.grid(column=0, row=3, sticky='we')
+        self.done_btn.grid(column=0, row=5, sticky='we')
 
     def toggle_view(self):
         if self.show:
@@ -2143,12 +2413,13 @@ class About:
 
 class CookWin:
     def __init__(self, ws_dir, tree_maps, build_heightmap, assets_handle, map_info_handle, globals_handle,
-                 river_handle, mountain_handle, paths_handle):
-        self.object_label = "Cook Map"
+                 river_handle, mountain_handle, paths_handle, labels):
+        self.object_label = labels["Title_CM_Win"]
         self.show = False
         self.ws_dir = ws_dir
         self.tree_maps = tree_maps
         self.paths = paths_handle
+        self.labels = labels
         # internal variables
         self.int_heightmap = tk.IntVar()
         self.int_baseline = tk.IntVar()
@@ -2192,54 +2463,54 @@ class CookWin:
         self.label_name = tk.Label(self.frame, text=self.object_label, font="Arial 12 bold")
         self.label_name.grid(column=0, row=0, sticky='we')
 
-        self.label_description = tk.Label(self.frame, text="select maps, masks that need\nbuild/rebuild:", justify='left')
+        self.label_description = tk.Label(self.frame, text=labels["Descr_CM_Win"], justify='left')
         self.label_description.grid(column=0, sticky='w', padx=5)
 
-        self.check_heightmap = tk.Checkbutton(self.frame, text="Build Heightmap", variable=self.int_heightmap, onvalue=1, offvalue=0)
+        self.check_heightmap = tk.Checkbutton(self.frame, text=labels["HMap_CM_Win"], variable=self.int_heightmap, onvalue=1, offvalue=0)
         self.check_heightmap.grid(column=0, sticky='w', padx=5)
 
-        self.check_baseline = tk.Checkbutton(self.frame, text="Build Baseline", variable=self.int_baseline, onvalue=1, offvalue=0)
+        self.check_baseline = tk.Checkbutton(self.frame, text=labels["Base_CM_Win"], variable=self.int_baseline, onvalue=1, offvalue=0)
         self.check_baseline.grid(column=0, sticky='w', padx=15)
 
-        self.check_river = tk.Checkbutton(self.frame, text="Build Rivers", variable=self.int_rivers, onvalue=1, offvalue=0)
+        self.check_river = tk.Checkbutton(self.frame, text=labels["River_CM_Win"], variable=self.int_rivers, onvalue=1, offvalue=0)
         self.check_river.grid(column=0, sticky='w', padx=15)
 
-        self.check_mountains = tk.Checkbutton(self.frame, text="Build Mountains", variable=self.int_mountains, onvalue=1, offvalue=0)
+        self.check_mountains = tk.Checkbutton(self.frame, text=labels["Mount_CM_Win"], variable=self.int_mountains, onvalue=1, offvalue=0)
         self.check_mountains.grid(column=0, sticky='w', padx=15)
 
-        self.check_material = tk.Checkbutton(self.frame, text="Build Material Map", variable=self.int_material_map, onvalue=1, offvalue=0)
+        self.check_material = tk.Checkbutton(self.frame, text=labels["MMap_CM_Win"], variable=self.int_material_map, onvalue=1, offvalue=0)
         self.check_material.grid(column=0, sticky='w', padx=5)
 
-        self.check_berries = tk.Checkbutton(self.frame, text="Build Berries Map", variable=self.int_berries_map, onvalue=1, offvalue=0)
+        self.check_berries = tk.Checkbutton(self.frame, text=labels["BMap_CM_Win"], variable=self.int_berries_map, onvalue=1, offvalue=0)
         self.check_berries.grid(column=0, sticky='w', padx=5)
 
-        self.check_rock = tk.Checkbutton(self.frame, text="Build Rock Density Map", variable=self.int_rock_map, onvalue=1, offvalue=0)
+        self.check_rock = tk.Checkbutton(self.frame, text=labels["RMap_CM_Win"], variable=self.int_rock_map, onvalue=1, offvalue=0)
         self.check_rock.grid(column=0, sticky='w', padx=5)
 
-        self.check_iron = tk.Checkbutton(self.frame, text="Build Iron Density Map", variable=self.int_iron_map, onvalue=1, offvalue=0)
+        self.check_iron = tk.Checkbutton(self.frame, text=labels["IMap_CM_Win"], variable=self.int_iron_map, onvalue=1, offvalue=0)
         self.check_iron.grid(column=0, sticky='w', padx=5)
 
-        self.check_fish = tk.Checkbutton(self.frame, text="Build Fish Density Map", variable=self.int_fish_map, onvalue=1, offvalue=0)
+        self.check_fish = tk.Checkbutton(self.frame, text=labels["FMap_CM_Win"], variable=self.int_fish_map, onvalue=1, offvalue=0)
         self.check_fish.grid(column=0, sticky='w', padx=5)
 
         self.check_trees = []
         self.init_tree_map_list()
 
-        self.check_paths = tk.Checkbutton(self.bottom_frame, text="Village paths found:  ", variable=self.int_paths, onvalue=1, offvalue=0,
+        self.check_paths = tk.Checkbutton(self.bottom_frame, text=labels["VPath_CM_Win"], variable=self.int_paths, onvalue=1, offvalue=0,
                                           disabledforeground="red")
         self.check_paths.grid(column=0, row=0, sticky='w', padx=5)
         self.get_village_paths()
 
-        self.check_mod = tk.Checkbutton(self.bottom_frame, text=" generate mod files", variable=self.int_lua, onvalue=1, offvalue=0)
+        self.check_mod = tk.Checkbutton(self.bottom_frame, text=labels["ModF_CM_Win"], variable=self.int_lua, onvalue=1, offvalue=0)
         self.check_mod.grid(column=0, row=1, sticky='w', padx=5)
         self.check_mod.select()
 
-        self.progress = ttk.Progressbar(self.btn_frame, orient=tk.HORIZONTAL, length=200, mode='determinate')
+        self.progress = ttk.Progressbar(self.btn_frame, orient=tk.HORIZONTAL, length=360, mode='determinate')
         self.progress.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
 
-        self.cook_btn = tk.Button(self.btn_frame, text="Cook Selected", command=self.click_cook)
+        self.cook_btn = tk.Button(self.btn_frame, text=labels["CSel_CM_Win"], command=self.click_cook)
         self.cook_btn.grid(row=1, column=0, padx=10, pady=10)
-        self.close_btn = tk.Button(self.btn_frame, text="Close", command=self.withdraw)
+        self.close_btn = tk.Button(self.btn_frame, text=labels["close"], command=self.withdraw)
         self.close_btn.grid(row=1, column=1, padx=10, pady=10)
 
         self.validate_maps()
@@ -2284,7 +2555,7 @@ class CookWin:
             self.check_berries.configure(state=tk.DISABLED)
         else:
             self.check_berries.configure(state=tk.NORMAL)
-            self.check_berries.select()
+            self.check_berries.deselect()
 
         if not os.path.exists(os.path.join(self.ws_dir, map_folder, "rock_density.png")):
             self.check_rock.select()
@@ -2305,6 +2576,7 @@ class CookWin:
             self.check_fish.configure(state=tk.DISABLED)
         else:
             self.check_fish.configure(state=tk.NORMAL)
+            self.check_iron.deselect()
         for i, tree_map in enumerate(self.tree_maps):
             if not os.path.exists(os.path.join(self.ws_dir, map_folder, tree_map.get_final_file_name())):
                 self.check_trees[i].configure(state=tk.NORMAL)
@@ -2325,7 +2597,7 @@ class CookWin:
         self.init_tree_map_list()
 
     def get_village_paths(self):
-        self.check_paths.configure(text="Village paths found:  " + str(len(self.paths)))
+        self.check_paths.configure(text=self.labels["VPath_CM_Win"] + str(len(self.paths)))
         self.check_paths.configure(state=tk.NORMAL)
         if len(self.paths) > 0:
             self.check_paths.select()
@@ -2441,7 +2713,6 @@ class CookWin:
             self.to_cook['tree'] = 0
             return 70
         elif self.to_cook['copy'] == 1:
-            from shutil import copyfile
             if not os.path.exists(os.path.join(self.ws_dir, "Cooked", "maps")):
                 os.makedirs(os.path.join(self.ws_dir, "Cooked", "maps"))
             copyfile(os.path.join(self.ws_dir, "Maps", hmap_name), os.path.join(self.ws_dir, "Cooked", "maps", hmap_name))
@@ -2474,7 +2745,7 @@ class CookWin:
                     'Description': self.map_info.description.get(),
                     'Version': self.map_info.version.get(),
                     'MapList': [{
-                        'Name': "Custom map - " + self.map_info.name.get(),
+                        'Name': self.map_info.subtitle.get(),
                         'Id': self.map_info.id.get()
                     }]
                     }
@@ -2561,6 +2832,7 @@ class CookWin:
         lua_string[-1] = lua_string[-1][:-1]
         lua_string.append('\t}')
         lua_string.append('})')
+        lua_string.append('-- This map was created with the help of the UFME')
         for i, line in enumerate(lua_string):
             lua_string[i] = line + '\n'
 
@@ -2573,8 +2845,8 @@ class CreateToolTip(object):
     """
 
     def __init__(self, widget, text='widget info'):
-        self.waittime = 500  # miliseconds
-        self.wraplength = 180  # pixels
+        self.wait_time = 500  # miliseconds
+        self.wrap_length = 180  # pixels
         self.widget = widget
         self.text = text
         self.widget.bind("<Enter>", self.enter)
@@ -2592,7 +2864,7 @@ class CreateToolTip(object):
 
     def schedule(self):
         self.unschedule()
-        self.id = self.widget.after(self.waittime, self.showtip)
+        self.id = self.widget.after(self.wait_time, self.showtip)
 
     def unschedule(self):
         id = self.id
@@ -2612,7 +2884,7 @@ class CreateToolTip(object):
         self.tw.wm_geometry("+%d+%d" % (x, y))
         label = tk.Label(self.tw, text=self.text, justify='left',
                          background="#ffffff", relief='solid', borderwidth=1,
-                         wraplength=self.wraplength)
+                         wraplength=self.wrap_length)
         label.pack(ipadx=1)
 
     def hidetip(self):

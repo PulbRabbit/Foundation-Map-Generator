@@ -21,7 +21,7 @@ def asset_mask(heightmap, min_height, max_height):
     return_map = numpy.full((1024, 1024), 0)
     for j in range(0, 1024):
         for i in range(0, 1024):
-            if min_height < heightmap[i][j] < max_height:
+            if min_height <= heightmap[i][j] <= max_height:
                 return_map[i][j] = 255
     return return_map
 
