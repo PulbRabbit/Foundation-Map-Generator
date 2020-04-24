@@ -4,7 +4,7 @@ You can create custom maps for the game and get all necessary files , without ed
 It is also possible to import heightmaps and generate all necessary resource maps to it.
 
 WHATS THE STATUS:
-its released in version 1.2.1
+its released in version 1.3.0
 
 WHAT ARE THE FILES:
 
