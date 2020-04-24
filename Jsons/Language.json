@@ -1,0 +1,746 @@
+{
+  "Name": "Language Pack",
+  "Author": "Isajah",
+  "Description": "Language Support package",
+  "Version": "1.3.1",
+
+  "File_Menu": {
+    "Eng":"File",
+    "Deu": "Datei",
+    "Kor": "파일",
+    "Fre": "Fichier"
+  },
+  "New_Menu": {
+    "Eng": "New Workspace",
+    "Deu": "Neuer Arbeitsbereich",
+    "Kor": "New Workspace",
+    "Fre": "Nouvel Espace de Travail"
+  },
+  "Load_Menu": {
+    "Eng": "Load Workspace",
+    "Deu": "Arbeitsbereich Laden",
+    "Kor": "Load Workspace",
+    "Fre": "Charger un Espace de Travail"
+  },
+  "Save_Menu": {
+    "Eng": "Save Workspace",
+    "Deu": "Arbeitsbereich Speichern",
+    "Kor": "Save Workspace",
+    "Fre": "Sauver son Espace de Travail"
+  },
+  "SaveAs_Menu": {
+    "Eng": "Save Workspace as",
+    "Deu": "Arbeitsbereich Speichern als",
+    "Kor": "Save Workspace as",
+    "Fre": "Sauver son Espace de Travail en temps que"
+  },
+  "Show_Expl_Menu": {
+    "Eng": "Show in Explorer",
+    "Deu": "Zeige im Explorer",
+    "Kor": "Show in Explorer",
+    "Fre": "Ouvrir dans l'Explorateur"
+  },
+
+  "Imp_Param_Menu": {
+    "Eng": "Import Parameters",
+    "Deu": "Importiere Parameter",
+    "Kor": "Import Parameters",
+    "Fre": "Importer des Paramètres"
+  },
+  "Exp_Param_Menu": {
+    "Eng": "Export Parameters",
+    "Deu": "Exportiere Parameter",
+    "Kor": "Export Parameters",
+    "Fre": "Exporter des Paramètres"
+  },
+  "Imp_Menu": {
+    "Eng": "Import Maps",
+    "Deu": "Importiere Karten",
+    "Kor": "Import Maps",
+    "Fre": "Importer des Cartes"
+  },
+  "Imp_Hmap_Menu": {
+    "Eng": "Import Heightmap",
+    "Deu": "Importiere Heightmap",
+    "Kor": "Import Heightmap",
+    "Fre": "Importer une Carte de Hauteur (Heightmap)"
+  },
+  "Imp_Mmap_Menu": {
+    "Eng":"Import Materialmap",
+    "Deu": "Importiere Materialmap",
+    "Kor":"Import Materialmap",
+    "Fre":"Importer une Carte Materiel"
+  },
+  "Imp_Bmap_Menu": {
+    "Eng":"Import Berries density map",
+    "Deu": "Importiere Beerenkarte",
+    "Kor":"Import Berries density map",
+    "Fre":"Importer une Carte de Densité des Baies"
+  },
+  "Imp_Smap_Menu": {
+    "Eng":"Import Rock density map",
+    "Deu": "Importiere Felsenkarte",
+    "Kor":"Import Rock density map",
+    "Fre":"Importer une Carte de Densité des Roches"
+  },
+  "Imp_Imap_Menu": {
+    "Eng": "Import Iron density map",
+    "Deu": "Importiere Eisenerzkarte",
+    "Kor": "Import Iron density map",
+    "Fre": "Importer une Carte de Densité du Fer"
+  },
+  "Imp_Fmap_Menu": {
+    "Eng": "Import Fish density map",
+    "Deu": "Importiere Fischkarte",
+    "Kor": "Import Fish density map",
+    "Fre": "Importer une Carte de Densité du Poisson"
+  },
+
+  "Map_Info_Menu": {
+    "Eng": "Map Info",
+    "Deu": "Map Info",
+    "Kor": "Map Info",
+    "Fre": "Informations de la Carte"
+  },
+  "Exit_Menu": {
+    "Eng":"Exit",
+    "Deu": "Schließen",
+    "Kor": "비상구",
+    "Fre": "Quitter"
+  },
+
+  "Add_Menu": {
+    "Eng":"Add",
+    "Deu": "Hinzufügen",
+    "Kor": "동사",
+    "Fre": "Ajouter"
+  },
+  "Add_River_Menu": {
+    "Eng":"River",
+    "Deu": "Fluss",
+    "Kor": "강",
+    "Fre": "Court d'Eau"
+  },
+  "Add_Mountain_Menu": {
+    "Eng":"Mountain",
+    "Deu": "Berg",
+    "Kor": "산맥",
+    "Fre": "Montagne"
+  },
+  "Add_Tree_Menu": {
+    "Eng":"Tree Map",
+    "Deu": "Bewaldungskarte",
+    "Kor": "나무 맵",
+    "Fre": "Carte des Arbres"
+  },
+  "Add_Path_Menu": {
+    "Eng": "Village Path",
+    "Deu": "Pfad",
+    "Kor": "길",
+    "Fre": "Chemin de Village"
+  },
+
+  "Build_Menu": {
+    "Eng":"Build",
+    "Deu": "Erzeugen",
+    "Kor": "Build",
+    "Fre": "Construction"
+  },
+  "Build_Hmap_Menu": {
+    "Eng": "Build heightmap",
+    "Deu": "Erzeuge heightmap",
+    "Kor": "Build heightmap",
+    "Fre": "Construire la Carte des Hauteur (Heightmap)"
+  },
+  "Build_Amap_Menu": {
+    "Eng": "Build assets maps",
+    "Deu": "Erzeuge Rohstoffkarten",
+    "Kor": "Build assets maps",
+    "Fre": "Construire la Carte des Assets"
+  },
+  "Cook_Menu": {
+    "Eng":"cook map project",
+    "Deu": "Projekt Fertigstellen",
+    "Kor": "cook map project",
+    "Fre": "Finaliser le Projet de Carte"
+  },
+
+   "Help_Menu": {
+     "Eng":"Help",
+     "Deu": "Hilfe",
+     "Kor": "도움",
+     "Fre": "Aide"
+   },
+   "About_Menu": {
+     "Eng":"About...",
+     "Deu": "Über...",
+     "Kor": "About...",
+     "Fre": "À Propos de..."
+   },
+
+   "View_Menu":{
+     "Eng":"View",
+     "Deu": "Anzeige",
+     "Kor": "View",
+     "Fre": "Vue"
+   },
+   "View_Prio_Menu":{
+     "Eng":"Priority",
+     "Deu": "Vorrang",
+     "Kor": "Priority",
+     "Fre": "Priorité"
+   },
+   "View_Assets_Menu":{
+     "Eng":"Assets",
+     "Deu": "Assets",
+     "Kor": "Assets",
+     "Fre": "Assets"
+   },
+   "View_Terrain_Menu":{
+     "Eng":"Terrain",
+     "Deu": "Terrain",
+     "Kor": "Terrain",
+     "Fre": "Terrain"
+   },
+   "View_Path_Menu":{
+     "Eng":" Show Village Pathes",
+     "Deu": "Dorfpfade anzeigen",
+     "Kor": "Show Village Pathes",
+     "Fre": "Montrer les Chemins de Village"
+   },
+   "View_Easy_Menu":{
+     "Eng": "Easy Mode",
+     "Deu": "Einfacher Modus",
+     "Kor": "Easy Mode",
+     "Fre": "Mode Facile"
+   },
+   "View_Hex_Menu":{
+     "Eng":"Hexagon Grid",
+     "Deu": "Hexagon Grid",
+     "Kor": "Hexagon Grid",
+     "Fre": "Grille d'Hexagones"
+   },
+   "View_Starting_Menu":{
+     "Eng": "Show Starting Tiles",
+     "Deu": "Zeige Startflächen",
+     "Kor": "Show Starting Tiles",
+     "Fre": "Montrer les Tuiles de Départ"
+   },
+   "View_3D_Menu":{
+     "Eng": "3D Preview",
+     "Deu": "3D Vorschau",
+     "Kor": "3D Preview",
+     "Fre": "Aperçu 3D"
+   },
+   "View_MMask_Menu":{
+     "Eng":"Material Mask",
+     "Deu": "Materialienmaske",
+     "Kor": "Material Mask",
+     "Fre": "Masque Materiel"
+   },
+   "Overlay":{
+     "Eng":"Overlay",
+     "Deu": "Überlagert",
+     "Kor": "Overlay",
+     "Fre": "Superposition"
+   },
+   "View_Tree_Menu":{
+     "Eng": "Tree Density",
+     "Deu": "Bewaldungskarten",
+     "Kor": "Tree Denisity",
+     "Fre": "Carte de Densité d'Arbre"
+   },
+   "Tree_Comb_Menu": {
+     "Eng":"Trees Combined",
+     "Deu": "Überlagert",
+     "Kor": "Trees Combined",
+     "Fre": "Arbres Combinés"
+   },
+   "View_Res_Menu": {
+     "Eng":"Resource Densities",
+     "Deu": "Ressourcenkarten",
+     "Kor": "Resource Densities",
+     "Fre": "Densités des Ressources"
+   },
+   "Res_Comb_Menu": {
+     "Eng":"Resources Combined",
+     "Deu": "Überlagert",
+     "Kor": "Resources Combined",
+     "Fre": "Ressources Combinées"
+   },
+   "Res_Berries_Menu": {
+     "Eng":"Berries Density Map",
+     "Deu": "Beerenstrauchkarte",
+     "Kor": "Berries Density Mapd",
+     "Fre": "Carte de Densité des Baies"
+   },
+   "Berries_Comb_Menu": {
+     "Eng":"Berries Overlay",
+     "Deu": "Beeren überlagert",
+     "Kor": "Berries Overlay",
+     "Fre": "Superposition des Baies"
+   },
+   "Berries_Mat_Menu": {
+     "Eng":"Berries Overlay + Material Mask",
+     "Deu": "Beeren überlagert mit Materialienmaske",
+     "Kor": "Berries Overlay + Material Mask",
+     "Fre": "Superposition des Baies + Masque Materiel"
+   },
+   "Res_Stone_Menu": {
+     "Eng":"Rock Density Map",
+     "Deu": "Gesteinskarte",
+	 "Kor": "Rock Density Map",
+     "Fre": "Carte de Densité des Roches"
+   },
+   "Stone_Comb_Menu": {
+     "Eng":"Rock Overlay",
+     "Deu": "Stein überlagert",
+     "Kor": "Rock Overlay",
+     "Fre": "Superposition des Roches"
+   },
+   "Stone_Mat_Menu": {
+     "Eng":"Rock Overlay + Material Mask",
+     "Deu": "Stein überlagert mit Materialienmaske",
+     "Kor": "Rock Overlay + Material Mask",
+     "Fre": "Superposition des Roches + Masque Materiel"
+   },
+   "Res_Ore_Menu": {
+     "Eng":"Iron Density Map",
+     "Deu": "Eisenerzkarte",
+     "Kor": "Iron Density Map",
+     "Fre": "Carte de Densité du Fer"
+   },
+   "Ore_Comb_Menu": {
+     "Eng":"Iron Overlay",
+     "Deu": "Eisenerz überlagert",
+     "Kor": "Iron Overlay",
+     "Fre": "Superposition du Fer"
+   },
+   "Ore_Mat_Menu": {
+     "Eng":"Iron Overlay + Material Mask",
+     "Deu": "Eisenerz Überlagert mit Materialienmaske",
+     "Kor": "Iron Overlay + Material Mask",
+     "Fre": "Superposition du Fer + Masque Materiel"
+   },
+   "Res_Fish_Menu": {
+     "Eng":"Fish Density Map",
+     "Deu": "Karte der Fischvorkommen",
+     "Kor": "Fish Density Map",
+     "Fre": "Carte de Densité des Poissons"
+   },
+   "Fish_Comb_Menu": {
+     "Eng":"Fish Overlay",
+     "Deu": "Fischvorkommen überlagert",
+     "Kor": "Fish Overlay",
+     "Fre": "Superposition des Poissons"
+   },
+   "Fish_Mat_Menu": {
+     "Eng":"Fish Overlay + Material Mask",
+     "Deu": "Fischvorkommen überlagert mit Materialienmaske",
+     "Kor": "Fish Overlay + Material Mask",
+     "Fre": "Superposition des Poissons + Masque Materiel"
+   },
+
+   "Global": {
+     "Eng":"Global Parameters",
+     "Deu": "Globale Parameter",
+     "Kor": "Global Parameters",
+     "Fre": "Paramètres Globaux"
+   },
+   "Asset_P": {
+     "Eng":"Asset Parameters",
+     "Deu": "Asset Parameter",
+     "Kor": "Asset Parameters",
+     "Fre": "Paramètres des Assets"
+   },
+   "Grass_P": {
+     "Eng":"Grass Parameters",
+     "Deu": "Grass Parameter",
+     "Kor": "Grass Parameters",
+     "Fre": "Paramètres de l'Herbe"
+   },
+   "Berries_P": {
+     "Eng":"Berries Parameters",
+     "Deu": "Beeren Parameter",
+     "Kor": "Berries Parameters",
+     "Fre": "Paramètres des Baies"
+   },
+   "Rock_P": {
+     "Eng":"Rock Parameters",
+     "Deu": "Gesteins Parameter",
+     "Kor": "Rock Parameters",
+     "Fre": "Paramètres des Roches"
+   },
+   "Iron_P": {
+     "Eng":"Iron Ore Parameters",
+     "Deu": "Eisenerz Parameter",
+     "Kor": "Iron Ore Parameters",
+     "Fre": "Paramètres des Minerais de Fer"
+   },
+   "Fish_P": {
+     "Eng":"Fish Parameters",
+     "Deu": "Fisch Parameter",
+     "Kor": "Fish Parameters",
+     "Fre": "Paramètres des Poissons"
+   },
+
+   "Build_Asset_Btn": {
+     "Eng":"build asset maps",
+     "Deu": "Erzeuge Assetkarten",
+     "Kor": "build asset maps",
+     "Fre": "Construire la Carte des Assets"
+   },
+   "Build_Mat_Btn": {
+     "Eng":"build material mask",
+     "Deu": "Erzeuge Materialmaske",
+     "Kor": "build material mask",
+     "Fre": "Construire la Carte du Materiel"
+   },
+   "Build_Berries_Btn": {
+     "Eng":"build berries map",
+     "Deu": "Erzeuge Beerenkarte",
+     "Kor": "build berries map",
+     "Fre": "Construire la Carte des Baies"
+   },
+   "Build_Stone_Btn": {
+     "Eng":"build rock map",
+     "Deu": "Erzeuge Gesteinskarte",
+     "Kor": "build rock map",
+     "Fre": "Construire la Carte des Roches"
+   },
+   "Build_Ore_Btn": {
+     "Eng":"build iron ore map",
+     "Deu": "Erzeuge Eisenerzkarte",
+     "Kor": "build iron ore map",
+     "Fre": "Construire la Carte des Minerais de Fer"
+   },
+   "Build_Fish_Btn": {
+     "Eng":"build fish map",
+     "Deu": "Erzeuge Fischkarte",
+     "Kor": "build fish map",
+     "Fre": "Construire la Carte des Poissons"
+   },
+
+   "height": {
+     "Eng":"height",
+     "Deu": "Höhe",
+     "Kor": "height",
+     "Fre": "hauteur"
+   },
+   "width":  {
+     "Eng":"width",
+     "Deu": "Breite",
+     "Kor": "width",
+     "Fre": "largeur"
+   },
+   "level":  {
+     "Eng":"level",
+     "Deu": "Höhe",
+     "Kor": "level",
+     "Fre": "niveau"
+   },
+   "min":    {
+     "Eng": "min",
+     "Deu": "Min",
+     "Kor": "min",
+     "Fre": "min"
+   },
+   "max":{
+     "Eng": "max",
+     "Deu": "Max",
+     "Kor": "max",
+     "Fre": "max"
+   },
+   "sigma":{
+     "Eng": "filter",
+     "Deu": "Filter",
+     "Kor": "filter",
+     "Fre": "filtre"
+   },
+   "steep":{
+     "Eng": "steep",
+     "Deu": "Steigung",
+     "Kor": "steep",
+     "Fre": "pente"
+   },
+   "div":{
+     "Eng":"div",
+     "Deu": "Div",
+     "Kor": "div",
+     "Fre": "Div."
+   },
+   "dense":  {
+     "Eng":"dense",
+     "Deu": "Dichte",
+     "Kor": "dense",
+     "Fre": "Dens."
+   },
+   "group":  {
+     "Eng":"group",
+     "Deu": "Gruppe",
+     "Kor": "group",
+     "Fre": "Groupe"
+   },
+   "delta":  {
+     "Eng":"delta",
+     "Deu": "Delta",
+     "Kor": "delta",
+     "Fre": "delta"
+   },
+   "build":  {
+     "Eng":"build",
+     "Deu": "erzeugen",
+     "Kor": "build",
+     "Fre": "Construire"
+   },
+   "delete": {
+     "Eng":"delete",
+     "Deu": "löschen",
+     "Kor": "build",
+     "Fre": "supprimer"
+   },
+   "add":    {
+     "Eng": "Add",
+     "Deu": "Hinzufügen",
+     "Kor": "Add",
+     "Fre": "Ajouter"
+   },
+   "addWP":  {
+     "Eng":"addWP",
+     "Deu": "WP hinzufügen",
+     "Kor": "add WP",
+     "Fre": "ajouter un WP"
+   },
+   "type":   {
+     "Eng":"type",
+     "Deu": "Typ",
+     "Kor": "type",
+     "Fre": "Type"
+   },
+   "weight": {
+     "Eng":"weight",
+     "Deu": "Gewichtung",
+     "Kor": "weight",
+     "Fre": "densité"
+   },
+   "size":   {
+     "Eng":"size",
+     "Deu": "Größe",
+     "Kor": "size",
+     "Fre": "Taille"
+   },
+   "color":  {
+     "Eng":"color",
+     "Deu": "Farbe",
+     "Kor": "color",
+     "Fre": "Couleur"
+   },
+   "spread": {
+     "Eng":"spread",
+     "Deu": "Breite",
+     "Kor": "spread",
+     "Fre": "répandre"
+   },
+   "close":  {
+     "Eng":"close",
+     "Deu": "schließen",
+     "Kor": "close",
+     "Fre": "fermer"
+   },
+
+   "TreeDensity_Title": {
+     "Eng":"Tree Density Map",
+     "Deu": "Bewaldungskarte",
+     "Kor": "Tree Density Map",
+     "Fre": "Carte de Densité des Arbres"
+   },
+   "TreeType_Title" : {
+     "Eng":"Tree Type",
+     "Deu": "Baumart",
+     "Kor": "Tree Type",
+     "Fre": "Type d'Arbre"
+   },
+   "River_Title": {
+     "Eng":"River",
+     "Deu": "Fluss",
+     "Kor": "강",
+     "Fre": "Court d'Eau"
+   },
+   "Mountain_Title": {
+     "Eng":"Mountain",
+     "Deu": "Berg",
+     "Kor": "산맥",
+     "Fre": "Montagne"
+   },
+   "Waypoint_Title" : {
+     "Eng":"Waypoint",
+     "Deu": "Wegpunkt",
+     "Kor": "Waypoint",
+     "Fre": "Waypoint"
+   },
+
+  "Title_CM_Win": {
+    "Eng":"Cook Map",
+    "Deu": "Projekt Fertigstellen",
+    "Kor": "Cook Map",
+    "Fre": "Finaliser la Carte"
+  },
+  "Descr_CM_Win": {
+    "Eng":"select maps, masks that need build/rebuild:",
+    "Deu":"Wähle aus, welche Karten, Masken (neu) erzeugt werden müssen",
+    "Kor":"select maps, masks that need build/rebuild:",
+    "Fre": "Selectionner la carte; les masques ayant besoin d'être construit/reconstruit :"
+  },
+  "HMap_CM_Win": {
+    "Eng": "Build Heightmap",
+    "Deu": "Erzeuge Heightmap",
+    "Kor": "Build Heightmap",
+    "Fre": "Construire la Carte des Hauteurs (Heightmap)"
+  },
+  "Base_CM_Win": {
+    "Eng": "Build Baseline",
+    "Deu": "Erzeuge Grundkarte",
+    "Kor": "Build Baseline",
+    "Fre": "Construire la Base"
+  },
+  "River_CM_Win":{
+    "Eng": "Build Rivers",
+    "Deu": "Erzeuge Flüsse",
+    "Kor": "Build Rivers",
+    "Fre": "Construire les Courts d'Eau"
+  },
+  "Mount_CM_Win":{
+    "Eng":"Build Mountains",
+    "Deu": "Erzeuge Berge",
+    "Kor": "Build Mountains",
+    "Fre": "Construire les Montagnes"
+  },
+  "MMap_CM_Win": {
+    "Eng": "Build Material Mask",
+    "Deu": "Erzeuge Materialmaske",
+    "Kor": "Build Material Mask",
+    "Fre": "Construire le Masque des Materiels"
+  },
+  "BMap_CM_Win": {
+    "Eng": "Build Berries Density Map",
+    "Deu": "Erzeuge Beerenplatzierungskarte",
+    "Kor": "Build Berries Density Map",
+	"Fre": "Construire la Carte de Densité des Baies"
+  },
+  "RMap_CM_Win": {
+    "Eng": "Build Rock Density Map",
+    "Deu": "Erzeuge Felsenplatzierungkarte",
+    "Kor": "Build Rock Density Map",
+    "Fre": "Construire la Carte de Densité des Roches"
+  },
+  "IMap_CM_Win": {
+    "Eng": "Build Iron Density Map",
+    "Deu": "Erzeuge Eisenplatzierungkarte",
+    "Kor": "Build Iron Density Map",
+    "Fre": "Construire la Carte de Densité du fer"
+  },
+  "FMap_CM_Win": {
+    "Eng": "Build Fish Density Map",
+    "Deu": "Erzeuge Fischplatzierungkarte",
+    "Kor": "Build Fish Density Map",
+    "Fre": "Construire la Carte de Densité du Poisson"
+  },
+  "VPath_CM_Win": {
+    "Eng": "Village paths found: ",
+    "Deu": "Dorfpfade gefunden: ",
+    "Kor": "Village paths found:",
+    "Fre": "Trouver les Cheminement de Village"
+  },
+  "ModF_CM_Win": {
+    "Eng": "Generate mod files ",
+    "Deu": "Generiere Mod Dateien ",
+    "Kor": "Generate mod files",
+    "Fre": "Generer les Fichiers du Mod"
+  },
+  "CSel_CM_Win": {
+    "Eng": "Cook Selected",
+    "Deu": "Erzeugen gemäß Auswahl",
+    "Kor": "Cook Selected",
+    "Fre": "Finaliser la/les Selection/s"
+  },
+  "new_ws_tt": {
+    "Eng": "create new workspace",
+    "Deu": "Erzeuge einen neuen Arbeitsbereich.",
+    "Kor": "create new workspace",
+    "Fre": "Creer un Nouvel Espace de Travail"
+  },
+  "load_ws_tt": {
+    "Eng": "load existing workspace",
+    "Deu": "Lade einen bestehenden Arbeitsbereich.",
+    "Kor": "load existing workspace",
+    "Fre": "Charger un Espace de Travail existant"
+  },
+  "save_ws_tt": {
+    "Eng": "save current workspace",
+    "Deu": "Speichere den aktuellen Arbeitsbereich.",
+    "Kor": "save current workspace",
+    "Fre": "Sauver l'Espace de Travail actuel"
+  },
+  "imp_json_tt": {
+    "Eng": "import parameters from a .json file",
+    "Deu": "Importiere Parameter aus einer .json Datei",
+    "Kor": "import parameters from a .json file",
+    "Fre": "Importer un Fichier de Paramètres JSON"
+  },
+  "exp_json_tt": {
+    "Eng": "export parameters to a .json file",
+    "Deu": "Exportiere Parameter in eine .json Datei",
+    "Kor": "export parameters to a .json file",
+    "Fre": "Exporter un Fichier de Paramètres JSON"
+  },
+ "mountain_tt": {
+    "Eng": "add a mountain range to the heightmap",
+    "Deu": "Füge ein Gebirge zur heigtmap ein.",
+    "Kor": "add a mountain range to the heightmap",
+    "Fre": "Ajouter une Chaîne de Montagne sur la Carte des Hauteurs"
+  },
+ "river_tt": {
+    "Eng": "add a river to the heightmap",
+    "Deu": "Füge einen Fluss zur heightmap hinzu.",
+    "Kor": "add a river to the heightmap",
+    "Fre": "Ajouter un Court d'Eau sur la Carte des Hauteurs"
+  },
+ "tree_tt": {
+    "Eng": "add a tree map, that defines where and what kind of trees grow",
+    "Deu": "Füge eine Bewaldungskarte hinzu. Bewaldungskarten definieren, welche Bäume wo wachsen",
+    "Kor": "add a tree map, that defines where and what kind of trees grow",
+    "Fre": "Ajouter une Carte des Arbres, definissant Où et Quel types d'arbres pousseront"
+  },
+ "path_tt": {
+    "Eng": "add a Village path.\nA village path defines an entry and an exit point for new villagers, traders and envoys",
+    "Deu": "Füge einen Dorfpfad hinzu.\n Dorfpfade definieren Ein- und Ausgänge für neue Bewohner, Händler und Boten.",
+    "Kor": "add a Village path.\nA village path defines an entry and an exit point for new villagers, traders and envoys",
+    "Fre": "Ajouter un Chemin de Village, definissant un point d'Entré et de Sortie pour les nouveaux Villagois, les Marchands et les Envoyés"
+  },
+ "build_tt":{
+   "Eng": "build the heightmap from the baseline map and all river and mountain maps",
+   "Deu": "Erzeuge die heightmap aus der Basismap und allen Flüssen und Bergen.",
+   "Kor": "build the heightmap from the baseline map and all river and mountain maps",
+   "Fre": "Construire le Carte des Hauteurs à partir des Cartes de Base, des Courts d'Eau et des Montagnes"
+ },
+  "cook_tt": {
+   "Eng": "finalize map by creating a folder with all necessary maps, the mod.json and mod.lua",
+   "Deu": "Stelle die Karte fertig. Es wird ein Ordner mit allen Karten und mod Dateien zusammengestellt",
+   "Kor": "finalize map by creating a folder with all necessary maps, the mod.json and mod.lua",
+   "Fre": "Finaliser la Carte en créant un Dossier avec toutes les cartes necessaires, le Mod.JSON et le Mod.LUA"
+  },
+  "about_text": {
+    "Eng": "Hello Foundation(r) friend, this is the Unofficial Foundation Map Editor.\nUnofficial is the key word here, since I programed this on my own and I'm not\nassociated with Polymorph Studios (r), nor do I own any rights to the game\n'Foundation' (r).\nThis software is provided for free and open source, under GNU GPL\n(see http://www.gnu.org/licenses/ )\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nIf you need help, do not hesitate to contact me via the\nFoundation Discord server: @Isajah at https://discordapp.com/\n\nLogo and Icon are modified from:\n'Mountain free icon' by Freepik from www.flaticon.com\n\nFrench Translation: @Morkeoth at https://discordapp.com/",
+    "Deu": "Hallo Foundation(r) Freunde, der UFME ist ein inoffizielles Tool, \ndass ich in meiner Freizeit als Support für die Community geschrieben habe.\nInoffiziell ist hierbei ganz wichtig, da ich weder mit \nPolymorph Studios (r) in einem Vertragsverhältnis stehe, noch irgendwelche Rechte \nam Spiel 'Foundation' (r) inne habe.\nDieses Programm ist kostenlos und open source, und unter GNU GPL linzensiert\n(http://www.gnu.org/licenses/ )\nIch habe dieses program mit der Hoffnung veröffentlicht, dass es für viele nüztzlich ist,\njedoch OHNE IRGENDEINE GARANTIE; nichtmal mit der angedeuteten Garantie, dass \nes für etwaige Weiterverabeitung mit ggf. Monetarisierungsabsichten geeignet ist.\n\nSolltest du Hilfe benötigen, sprich mich auf dem Discordserver gerne an: \nFoundation Discord server: @Isajah at https://discordapp.com/\n\nDas ursprüngliche Bild des Logos entstammt folgender Quelle:\n'Mountain free icon' by Freepik from www.flaticon.com\n\nBesonderen Dank geht @Morkeoth für die Übersetzung ins Französische.",
+    "Kor": "Hello Foundation(r) friend, this is the Unofficial Foundation Map Editor.\nUnofficial is the key word here, since I programed this on my own and I'm not\nassociated with Polymorph Studios (r), nor do I own any rights to the game\n'Foundation' (r).\nThis software is provided for free and open source, under GNU GPL\n(see http://www.gnu.org/licenses/ )\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nIf you need help, do not hesitate to contact me via the\nFoundation Discord server: @Isajah at https://discordapp.com/\n\nLogo and Icon are modified from:\n'Mountain free icon' by Freepik from www.flaticon.com\n\nFrench Translation: @Morkeoth at https://discordapp.com/",
+    "Fre": "Bonjour ami de Foundation (r), bienvenu sur l'Editeur de Carte Non-Officiel de Foundation.\nNon-Officiel est le mot clef ici, puisque j'ai programmer ce logiciel moi même et \nque je ne suis en aucun cas associé avec Polymorph Studios (r), ni ne détiens aucun droit sur le jeu Foundation (r).\nCe logiciel est fourni gratuitement et est Open Source (Logiciel Libre), sous GNU GPL.\n(Voir ici : http://www.gnu.org/licenses/ )\nCe programme est distribué dans l'espoir qu'il puissent être utile,\nmais sans aucune PERIODE DE GARANTIE, sans même les QUALITÉS MARCHANDES ou ADÉQUATION À UN USAGE PARTICULIER.\n\nSi vous avez besoin d'aide, n'hésitez pas à me contacter via\nle Serveur Discord de Foundation : @Isajah sur https://discordapp.com/\n\nLogo et Icones sont modifiés depuis :\n'Mountain free icon' par Freepik de www.flaticon.com"
+
+  },
+
+
+
+  "end":0
+
+
+
+}

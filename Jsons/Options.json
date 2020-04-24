@@ -1,0 +1,17 @@
+{
+  "Name": "Language Pack",
+  "Author": "Isajah",
+  "Description": "Language Support package",
+  "Version": "1.3.1",
+
+  "Language": "Deu",
+  "Language_Description": {
+    "Eng": "English",
+    "Deu": "German",
+    "Kor": "Korean",
+    "Fre": "French"
+  },
+  "Easy_Mode": 0,
+  "Default_Author": "Change Default Author in Options"
+
+}
